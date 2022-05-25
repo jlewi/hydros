@@ -1,0 +1,14 @@
+version: 1
+
+merge:
+  trigger:
+    labels: ["yeet-it", "automerge"]
+  ignore:
+    labels: ["wip"]
+  method: squash
+  branch_method:
+    release: merge
+  delete_after_merge: true
+  # We need this because this repo doesn't have any status checks
+  # https://github.com/palantir/bulldozer#bulldozer-isnt-merging-my-commit-when-it-should-what-could-be-happening
+  allow_merge_with_no_checks: true

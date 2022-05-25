@@ -1,0 +1,42 @@
+# This policy requires an approval from a member on a specific team,
+# or the PR to be dependabot-authored.
+
+policy:
+  approval:
+    - or:
+        - owner-approval
+        - dependabot-authored
+
+approval_rules:
+  - name: owner-approval
+    description: "This rule requires approval by owner."
+    requires:
+      count: 1
+      teams:
+        - "primerai/hydros-owners"
+    options:
+      request_review:
+        # Have policy-bot automatically request reviews from teams.
+        # GitHub will then assign code-reviews to teams based on the code
+        # review policy for the team.
+        enabled: true
+        mode: teams
+  - name: dependabot-authored
+    description: "Auto-approve dependabot PRs."
+    if:
+      has_author_in:
+        # N.B. note the [bot] to indicate its a bot
+        users: ["dependabot[bot]"]
+      # Ensure there are no commits from other authors on this PR.
+      # This prevents users from trying to piggy-back changes onto
+      # dependabot authored PRs. We need to allow commits from
+      # primerai-bulldozer because bulldozer can update PRs by merging
+      # changes from master.
+      only_has_contributors_in:
+        users: ["dependabot[bot]", "primerai-bulldozer[bot]"]
+      # dependabot PRs should be signed by GitHub and can be verified by
+      # GitHub. It looks like commits created by dependabot and bulldozer
+      # are created by the web-flow user: https://github.com/web-flow.
+      has_valid_signatures: true
+      has_valid_signatures_by:
+        users: ["web-flow"]
