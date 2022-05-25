@@ -1,0 +1,70 @@
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: RedisCluster
+metadata:
+  name: redis-cluster
+spec:
+  clusterSize: 3
+  kubernetesConfig:
+    image: redis-cluster-image-1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 2Gi
+      limits:
+        cpu: 1500m
+        memory: 10Gi
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: mlp-standard
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 32Gi
+  tolerations:
+    - effect: NoSchedule
+      key: instancetype
+      operator: Equal
+      value: ondemand
+  redisFollower:
+    redisConfig:
+      additionalRedisConfig: redis-cluster-config
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: instancetype
+                  operator: In
+                  values:
+                    - ondemand
+                - key: spotinst.io/node-lifecycle
+                  operator: In
+                  values:
+                    - od
+  redisLeader:
+    redisConfig:
+      additionalRedisConfig: redis-cluster-config
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: instancetype
+                  operator: In
+                  values:
+                    - ondemand
+                - key: spotinst.io/node-lifecycle
+                  operator: In
+                  values:
+                    - od
+  redisExporter:
+    enabled: true
+    image: redis-cluster-image-2
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi

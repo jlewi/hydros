@@ -1,0 +1,49 @@
+# Reference: https://skaffold.dev/docs/references/yaml/
+apiVersion: skaffold/v2beta13
+kind: Config
+metadata:
+  name: someconfig
+build:
+  artifacts:
+    - image: 0-1.dkr.ecr.us-west-2.amazonaws.com/hydros/hydros
+      # Context should be root of the Repo.
+      context: .
+      kaniko:
+        # Relative to context
+        dockerfile: ./Dockerfile
+        cache: {}
+        env:
+          - name: AWS_REGION
+            value: us-west-2
+        volumeMounts:
+          - name: docker-config
+            mountpath: /kaniko/.docker/
+          - name: pip-config
+            mountpath: /kaniko/pip/
+  cluster:
+    # TODO(jeremy): What should we use as a default namespace? We need a namespace wit
+    # the docker-config ConfigMap to allow Kaniko to push to ECR
+    namespace: emojichat
+    annotations:
+      "ad.datadoghq.com/tags": >-
+        {
+          "skaffold-image": "hydros/hydros-emojichat",
+          "git-repository": "hydros"
+        }
+    resources:
+      requests:
+        cpu: 1
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 8Gi
+    volumes:
+      - name: docker-config
+        configMap:
+          name: docker-config
+      - name: pip-config
+        configMap:
+          name: pip-conf
+deploy:
+  kpt:
+    dir: manifests

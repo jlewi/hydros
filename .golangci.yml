@@ -1,0 +1,10 @@
+linters:
+  disable-all: true
+  enable:
+    - staticcheck
+
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA1019: kioutil.LegacyPathAnnotation"

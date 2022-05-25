@@ -1,0 +1,7 @@
+apiVersion: v1alpha1
+kind: PodEnvs
+metadata:
+  name: pod-envs
+spec:
+  remove:
+    - DD_AGENT_HOST

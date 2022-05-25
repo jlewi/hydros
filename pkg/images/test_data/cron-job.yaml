@@ -1,0 +1,37 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: project-cleanup
+  namespace: project
+spec:
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            name: project-cleanup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: project-service-account
+          containers:
+            - name: cleanup
+              image: cronjob-image
+              command:
+                - python
+                - project/scripts/delete_k8s_failed_jobs.py
+              env:
+                - name: NAMESPACE
+                  value: hydros
+                - name: ENVIRONMENT
+                  value: prod
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 0.5Gi
+                requests:
+                  cpu: "1"
+                  memory: 0.5Gi
+              imagePullPolicy: IfNotPresent
+  schedule: 0 * * * *
+  startingDeadlineSeconds: 200

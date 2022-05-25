@@ -1,0 +1,24 @@
+# Docs: https://yamllint.readthedocs.io/en/stable/configuration.html
+extends: default
+
+rules:
+  comments:
+    # kpt uses a single space for setters.
+    min-spaces-from-content: 1
+  document-end: disable
+  document-start: disable
+  line-length:
+    max: 225
+  truthy: disable
+  indentation:
+    spaces: 2
+    indent-sequences: yes
+
+# Ignore test data because the formatting of the test files
+# depends on the formatting outputted by kustomize and other
+# tools.
+ignore: |
+  cmd/deploy/test_data/source/*
+  pkg/kustomize/fns/envs/test_data/*
+  pkg/kustomize/test_data/**
+  .build/**

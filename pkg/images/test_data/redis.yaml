@@ -1,0 +1,10 @@
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: Redis
+metadata:
+  name: engines-redis
+  namespace: engines
+spec:
+  kubernetesConfig:
+    image: redis-image-1
+  redisExporter:
+    image: redis-image-2

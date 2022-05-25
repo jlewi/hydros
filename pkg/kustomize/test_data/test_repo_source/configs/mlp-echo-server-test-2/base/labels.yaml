@@ -1,0 +1,9 @@
+# This function defines a kustomize function to manipulate labels.
+kind: CommonLabels
+metadata:
+  name: setlabels
+spec:
+  labels:
+    owner: ml-platform
+    testing: mlp-test
+    hello: negative-testing

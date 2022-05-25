@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy2
+  namespace: cert-manager
+  labels:
+    app: deploy2
+spec:
+  replicas: 1
+  selector:
+    metadata:
+      labels:
+        app: cert-manager
+    matchLabels:
+      app: cert-manager
+  template:
+    spec:
+      containers:
+        - name: gateway
+          image: some/repo/gateway:latest

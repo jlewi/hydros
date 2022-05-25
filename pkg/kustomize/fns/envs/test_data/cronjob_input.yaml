@@ -1,0 +1,19 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: test-cjob
+  namespace: FAKE
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: FAKE
+              env:
+                - name: keep_this_one
+                  value: should be kept
+                - name: SENTRY_KEY
+                  value: "1234a"
+                - name: DD_AGENT_HOST
+                  value: Fake

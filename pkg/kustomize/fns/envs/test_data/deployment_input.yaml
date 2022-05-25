@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cert-manager
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+    mplate:
+    metadata:
+      labels:
+        app: cert-manager
+  template:
+    spec:
+      initContainers:
+        - name: FAKE-init
+          env:
+            # This comment will be removed because the associated entry in the env list is removed
+            - name: SENTRY_KEY
+              value: "1234a"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # This comment will be preserved because it is attached to a node that is kept.
+            - name: SOMEENV
+              value: helloworld
+      containers:
+        - image: some/repo/gateway:latest
+          name: gateway
+          env:
+            # This comment will be removed because the associated entry in the env list is removed
+            - name: SENTRY_KEY
+              value: "1234a"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # This comment will be preserved because it is attached to a node that is kept.
+            - name: SOMEENV
+              value: helloworld

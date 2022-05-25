@@ -1,0 +1,41 @@
+# Reference: https://skaffold.dev/docs/references/yaml/
+apiVersion: skaffold/v2beta13
+kind: Config
+metadata:
+  name: skaffoldtest
+build:
+  artifacts:
+    - image: 12345.dkr.ecr.us-west-2.amazonaws.com/hydros/hydros
+      # Context should be root of the Repo.
+      context: .
+      kaniko:
+        # Relative to context
+        dockerfile: ./Dockerfile
+        cache: {}
+        env:
+          - name: AWS_REGION
+            value: us-west-2
+        volumeMounts:
+          - name: docker-config
+            mountpath: /kaniko/.docker/
+          - name: pip-config
+            mountpath: /kaniko/pip/
+  cluster:
+    namespace: emojichat
+    resources:
+      requests:
+        cpu: 1
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 8Gi
+    volumes:
+      - name: docker-config
+        configMap:
+          name: docker-config
+      - name: pip-config
+        configMap:
+          name: pip-conf
+deploy:
+  kpt:
+    dir: manifests
