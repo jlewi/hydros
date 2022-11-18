@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/null"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/null"
 	"github.com/stretchr/testify/assert"
 	labelsFn "sigs.k8s.io/kustomize/api/filters/labels"
 	filtertest "sigs.k8s.io/kustomize/api/testutils/filtertest"

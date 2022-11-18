@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 // buildPrMessage generates the message for the PR.

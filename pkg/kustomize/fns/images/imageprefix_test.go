@@ -7,10 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/null"
-	"sigs.k8s.io/kustomize/api/types"
-	"sigs.k8s.io/kustomize/kyaml/resid"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/null"
 
 	"github.com/stretchr/testify/assert"
 	filtertest "sigs.k8s.io/kustomize/api/testutils/filtertest"

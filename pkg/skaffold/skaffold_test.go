@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 func Test_LoadSkaffoldConfigs(t *testing.T) {

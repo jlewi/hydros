@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio/filters"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
+	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	filtertest "sigs.k8s.io/kustomize/api/testutils/filtertest"
 )

@@ -1,4 +1,4 @@
-module github.com/PrimerAI/hydros-public
+module github.com/jlewi/hydros
 
 go 1.17
 
@@ -11,7 +11,6 @@ replace (
 
 require (
 	github.com/GoogleContainerTools/skaffold v1.34.0
-	github.com/PrimerAI/go-micro-utils-public/gmu v0.0.0-20220523220044-90435d47069d
 	github.com/aws/aws-sdk-go v1.43.41
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/cli/cli v0.10.1
@@ -78,6 +77,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/Microsoft/hcsshim v0.8.23 // indirect
+	github.com/PrimerAI/go-micro-utils-public/gmu v0.0.0-20220526222947-c3eb3c2c79c8 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect

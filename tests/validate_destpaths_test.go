@@ -1,4 +1,4 @@
-package util
+package tests
 
 import (
 	"fmt"
@@ -7,11 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jlewi/hydros/pkg/util"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
+	"github.com/jlewi/hydros/api/v1alpha1"
 )
 
 // Check the relative path of a path pair to determine if one path is a subdir of the other
@@ -40,8 +42,13 @@ func pairHasSubDir(path1 string, path2 string) bool {
 }
 
 func Test_IndependentDestPaths(t *testing.T) {
+	configsDir := "../../configs/"
+	if _, err := os.Stat(configsDir); os.IsNotExist(err) {
+		t.Logf("No configuration directory %v; skipping test", configsDir)
+		return
+	}
 	// Get all yaml files in the configs dir
-	yamlFiles, err := FindYamlFiles("../../configs/")
+	yamlFiles, err := util.FindYamlFiles(configsDir)
 	assert.NoError(t, err)
 
 	// For each YAML file
@@ -49,7 +56,7 @@ func Test_IndependentDestPaths(t *testing.T) {
 	for _, yFile := range yamlFiles {
 		t.Logf("Processing %v", yFile)
 		// Read YAML file into list of resource nodes
-		rnodes, err := ReadYaml(yFile)
+		rnodes, err := util.ReadYaml(yFile)
 		assert.NoError(t, err)
 
 		// For each rnode

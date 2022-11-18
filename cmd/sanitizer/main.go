@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/PrimerAI/go-micro-utils-public/gmu/logging"
-	"github.com/PrimerAI/hydros-public/cmd/sanitizer/app"
 	"github.com/go-logr/zapr"
+	"github.com/jlewi/hydros/cmd/sanitizer/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

@@ -8,23 +8,30 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jlewi/hydros/api/v1alpha1"
 
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/pkg/util"
 	"gopkg.in/yaml.v3"
 
 	kustomize "sigs.k8s.io/kustomize/api/types"
 )
 
-var testDirs = []string{"../configs/dev", "../configs/prod"}
+var testDirs = []string{"./configs/dev", "./configs/prod"}
 
 // Test_kustomizations verifies that the kustomizations include all the yaml files
+// TODO(jeremy): This is an example of a test to validate actual hydros configurations.
+// We might want to rethink it. The test won't pass on public repositories because there are no configs.
+// However, we might want to provide a test as an example for people looking to use it.
 func Test_kustomizations(t *testing.T) {
 	for _, d := range testDirs {
 		kustomizeFile := path.Join(d, "kustomization.yaml")
 		f, err := os.Open(kustomizeFile)
 		if err != nil {
+			if os.IsNotExist(err) {
+				t.Logf("File %v doesn't exist; test skipped", kustomizeFile)
+				continue
+			}
 			t.Errorf("Failed to open kustomization: %v", kustomizeFile)
 		}
 		decoder := yaml.NewDecoder(f)
@@ -93,6 +100,10 @@ func Test_build(t *testing.T) {
 	log := util.SetupLogger("info", true)
 	h := util.ExecHelper{Log: log}
 	for _, d := range testDirs {
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			t.Logf("Directory %v doesn't exist; test skipped", d)
+			continue
+		}
 		cmd := exec.Command("kustomize", "build", ".")
 		cmd.Dir = d
 
@@ -107,6 +118,10 @@ func Test_ValidManifestSync(t *testing.T) {
 	for _, d := range testDirs {
 		files, err := ioutil.ReadDir(d)
 		if err != nil {
+			if os.IsNotExist(err) {
+				t.Logf("Directory %v doesn't exist; test skipped", d)
+				continue
+			}
 			t.Errorf("Failed to readDir: %v", d)
 			continue
 		}
@@ -115,7 +130,6 @@ func Test_ValidManifestSync(t *testing.T) {
 			"kustomization.yaml":      true,
 			"hydros_for_testing.yaml": true,
 		}
-
 
 		for _, f := range files {
 			if _, ok := excluded[f.Name()]; ok {
@@ -154,9 +168,6 @@ func Test_ValidManifestSync(t *testing.T) {
 				}
 
 				if manifestSync.Spec.MatchAnnotations != nil {
-					if _, ok := legacy[f.Name()]; ok {
-						continue
-					}
 					t.Errorf("ManifestSync in file %v; isn't valid. Setting spec.matchAnnotations is no longer allowed in new configurations. Use spec.selector", fullPath)
 					continue
 				}

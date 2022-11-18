@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/go-logr/zapr"
+	"github.com/jlewi/hydros/pkg/util"
 	"go.uber.org/zap"
 )
 

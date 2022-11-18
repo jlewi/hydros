@@ -17,11 +17,12 @@ import (
 //
 // N.B jeremy@ couldn't get this to work when you have a list of maps and want to modify a field in the map e.g.
 // spec:
-//  items:
-//  -  name: item1
-//     valuetokeep: v
-//     labels:
-//       toremove: a
+//
+//	items:
+//	-  name: item1
+//	   valuetokeep: v
+//	   labels:
+//	     toremove: a
 //
 // Specifying a FieldSpec with path spec/items[] doesn't work; we get the wrong type of value
 // Specifying a FieldSpec with path spec/items[]/labels does work but removes values from the nested nictionary.

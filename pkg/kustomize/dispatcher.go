@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/patches"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/patches"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -19,13 +19,13 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/configmap"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/envs"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/fields"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/images"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/labels"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/s3assets"
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/configmap"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/envs"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/fields"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/images"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/labels"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/s3assets"
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 const (

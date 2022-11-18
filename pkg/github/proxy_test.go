@@ -14,10 +14,10 @@ func Test_parseUrl(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			path: "github.com/PrimerAI/hydros-public/some/path/file.txt",
+			path: "github.com/SomeOrg/hydros/some/path/file.txt",
 			expected: &target{
 				Host: "github.com",
-				Org:  "PrimerAI",
+				Org:  "SomeOrg",
 				Repo: "hydros",
 				Dest: "some/path/file.txt",
 			},

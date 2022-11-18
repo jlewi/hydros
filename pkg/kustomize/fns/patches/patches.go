@@ -3,8 +3,8 @@ package patches
 import (
 	"fmt"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kustomize/api/filters/patchjson6902"
 	"sigs.k8s.io/kustomize/api/filters/patchstrategicmerge"

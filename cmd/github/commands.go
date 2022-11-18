@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/PrimerAI/hydros-public/pkg/github"
-	"github.com/PrimerAI/hydros-public/pkg/hydros"
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/pkg/github"
+	"github.com/jlewi/hydros/pkg/hydros"
+	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

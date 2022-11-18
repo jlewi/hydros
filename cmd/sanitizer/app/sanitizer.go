@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/pkg/util"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"

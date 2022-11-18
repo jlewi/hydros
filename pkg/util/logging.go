@@ -79,13 +79,17 @@ func getFrame(skipFrames int) runtime.Frame {
 // MyCaller returns the caller of the Function in the form ${package}/${file}:${linenumber}
 // e.g.
 // file: somemodule/cmd/parent.go
-// func parent() {
-//   child()
-// }
+//
+//	func parent() {
+//	  child()
+//	}
+//
 // file: somemodule/cmd/child.go
-// func child() {
-//   c := util.MyCaller()
-// }
+//
+//	func child() {
+//	  c := util.MyCaller()
+//	}
+//
 // The value of c will be "cmd/parent.go:2"
 //
 // This is useful when you have common error handlers that want to log the location that invoked them.

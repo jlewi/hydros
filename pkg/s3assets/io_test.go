@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
+	"github.com/jlewi/hydros/api/v1alpha1"
 
 	"github.com/PrimerAI/go-micro-utils-public/gmu/s3"
 	"github.com/stretchr/testify/suite"

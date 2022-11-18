@@ -6,9 +6,9 @@ import (
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/regexp"
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/regexp"
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 // Extractor extracts all the S3 urls in a directory of manifests

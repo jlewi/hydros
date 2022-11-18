@@ -1,6 +1,6 @@
 package app
 
-import "github.com/PrimerAI/hydros-public/api/v1alpha1"
+import "github.com/jlewi/hydros/api/v1alpha1"
 
 const (
 	// SanitizeKind is the kind for SanitizeKind resources.

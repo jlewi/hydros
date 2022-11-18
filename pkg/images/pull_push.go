@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/images"
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/images"
 	"github.com/matryer/try"
 	"gopkg.in/yaml.v3"
 )

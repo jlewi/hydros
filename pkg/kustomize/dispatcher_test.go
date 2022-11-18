@@ -14,14 +14,14 @@ import (
 
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/configmap"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/envs"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/configmap"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/envs"
 
 	"sigs.k8s.io/kustomize/kyaml/kio"
 
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jlewi/hydros/pkg/util"
 	"github.com/otiai10/copy"
 	apps "k8s.io/api/apps/v1"
 )

@@ -3,8 +3,8 @@ package labels
 import (
 	"fmt"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/kustomize/fns"
 	kLabels "sigs.k8s.io/kustomize/api/filters/labels"
 	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/kio"
