@@ -13,11 +13,11 @@ import (
 )
 
 // GetInstallID returns the installation id for the specified GitHubApp.
-// privateKey should be the path to the privateKey.
-func GetInstallID(appID int64, privateKey string, owner string, repo string) (int64, error) {
+// privateKey should be the contents of the private key.
+func GetInstallID(appID int64, privateKey []byte, owner string, repo string) (int64, error) {
 	tr := http.DefaultTransport
 
-	appTr, err := ghinstallation.NewAppsTransportKeyFromFile(tr, appID, privateKey)
+	appTr, err := ghinstallation.NewAppsTransport(tr, appID, privateKey)
 
 	client := &http.Client{Transport: appTr}
 
@@ -65,34 +65,38 @@ func newOrgAndRepo(org string, repo string) orgAndRepo {
 	return orgAndRepo{Org: org, Repo: repo}
 }
 
-// TransportManager manages credentials for a GitHub App.
+// TransportManager manages transport managers for a GitHub App.
+// The manager is instantiated with the app ID and private key for a GitHub App.
+// The Get function can then be used to obtain a transport with credentials to talk to a particular repository
+// that the app has access to
+//
 // TODO(jeremy): Can/should we wrap this in the OAuth flow.
 // TODO(jeremy): Should we reuse some of palantir built?
 // https://github.com/palantir/go-githubapp/blob/develop/githubapp/client_creator.go
 type TransportManager struct {
-	log            logr.Logger
-	appID          int64
-	privateKeyFile string
+	log        logr.Logger
+	appID      int64
+	privateKey []byte
 
 	// Map of orgAndRepo to the transport to talk to that Repo.
 	ghTransports map[orgAndRepo]*ghinstallation.Transport
 }
 
 // NewTransportManager creates a new transport manager.
-func NewTransportManager(appID int64, privateKeyFile string, log logr.Logger) (*TransportManager, error) {
+func NewTransportManager(appID int64, privateKey []byte, log logr.Logger) (*TransportManager, error) {
 	if appID == 0 {
 		return nil, fmt.Errorf("gitHubAppID is required")
 	}
 
-	if privateKeyFile == "" {
-		return nil, fmt.Errorf("privateKeyFile is required")
+	if len(privateKey) == 0 {
+		return nil, fmt.Errorf("privateKey is required")
 	}
 
 	return &TransportManager{
-		log:            log,
-		appID:          appID,
-		privateKeyFile: privateKeyFile,
-		ghTransports:   map[orgAndRepo]*ghinstallation.Transport{},
+		log:          log,
+		appID:        appID,
+		privateKey:   privateKey,
+		ghTransports: map[orgAndRepo]*ghinstallation.Transport{},
 	}, nil
 }
 
@@ -105,7 +109,7 @@ func (m *TransportManager) Get(org string, repo string) (*ghinstallation.Transpo
 		return tr, nil
 	}
 
-	gitHubInstallID, err := GetInstallID(m.appID, m.privateKeyFile, org, repo)
+	gitHubInstallID, err := GetInstallID(m.appID, m.privateKey, org, repo)
 	if err != nil {
 		log.Error(err, "Failed to Get GitHub App InstallId", "AppId", m.appID, "Org", org, "Repo", repo)
 		return nil, err
@@ -120,7 +124,7 @@ func (m *TransportManager) Get(org string, repo string) (*ghinstallation.Transpo
 	tr := http.DefaultTransport
 
 	// Wrap the shared transport for use with the app ID 1 authenticating with installation ID 99.
-	ghTr, err := ghinstallation.NewKeyFromFile(tr, m.appID, gitHubInstallID, m.privateKeyFile)
+	ghTr, err := ghinstallation.New(tr, m.appID, gitHubInstallID, m.privateKey)
 	if err != nil {
 		log.Error(err, "Failed to Get GitHub App Transport", "AppId", m.appID, "Org", org, "Repo", repo)
 		return nil, err

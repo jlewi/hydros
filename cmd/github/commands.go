@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/jlewi/hydros/pkg/files"
+
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/hydros"
 	"github.com/jlewi/hydros/pkg/util"
@@ -28,7 +30,20 @@ func NewAppTokenCmd(w io.Writer, level *string, devLogger *bool) *cobra.Command 
 		Run: func(cmd *cobra.Command, args []string) {
 			log := util.SetupLogger(*level, *devLogger)
 			err := func() error {
-				manager, err := github.NewTransportManager(int64(githubAppID), secret, log)
+				f := &files.Factory{}
+				h, err := f.Get(secret)
+				if err != nil {
+					return err
+				}
+				r, err := h.NewReader(secret)
+				if err != nil {
+					return err
+				}
+				secretByte, err := io.ReadAll(r)
+				if err != nil {
+					return err
+				}
+				manager, err := github.NewTransportManager(int64(githubAppID), secretByte, log)
 				if err != nil {
 					return errors.Wrapf(err, "TransportManager creation failed")
 				}
@@ -58,12 +73,12 @@ func NewAppTokenCmd(w io.Writer, level *string, devLogger *bool) *cobra.Command 
 				return nil
 			}()
 			if err != nil {
-				fmt.Fprintf(w, "Failed to get resource; error:\n%v", err)
+				fmt.Fprintf(w, "Failed to get resource; error:\n%+v", err)
 			}
 		},
 	}
 
-	cmd.Flags().StringVarP(&secret, "private-key", "", "", "Path to the file containing the secret for the GitHub App to Authenticate as.")
+	cmd.Flags().StringVarP(&secret, "private-key", "", "", "The uri containing the secret for the GitHub App to Authenticate as. Supported schema file, gcpSecretManager")
 	cmd.Flags().IntVarP(&githubAppID, "appId", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
 	cmd.Flags().StringVarP(&org, "org", "o", "PrimerAI", "The GitHub org to obtain the token for")
 	cmd.Flags().StringVarP(&repo, "repo", "r", "", "The repo obtain the token for")
