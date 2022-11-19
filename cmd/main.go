@@ -8,17 +8,16 @@ import (
 	"strings"
 	"time"
 
+	githubCmds "github.com/jlewi/hydros/cmd/github"
+	"github.com/jlewi/hydros/pkg/github"
+	"github.com/jlewi/hydros/pkg/hydros"
 
-	githubCmds "github.com/PrimerAI/hydros-public/cmd/github"
-	"github.com/PrimerAI/hydros-public/pkg/github"
-	"github.com/PrimerAI/hydros-public/pkg/hydros"
-
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/ecrutil"
-	"github.com/PrimerAI/hydros-public/pkg/gitops"
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/ecrutil"
+	"github.com/jlewi/hydros/pkg/gitops"
+	"github.com/jlewi/hydros/pkg/util"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -172,7 +171,6 @@ func init() {
 	rootCmd.AddCommand(tagCmd)
 	rootCmd.AddCommand(newVersionCmd(os.Stdout))
 	rootCmd.AddCommand(githubCmds.NewAppTokenCmd(os.Stdout, &gOptions.level, &gOptions.devLogger))
-
 
 	rootCmd.PersistentFlags().BoolVar(&gOptions.devLogger, "dev-logger", false, "If true configure the logger for development; i.e. non-json output")
 	rootCmd.PersistentFlags().StringVarP(&gOptions.level, "log-level", "", "info", "Log level: error info or debug")

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/pkg/util"
 	"gopkg.in/yaml.v3"
 )
 

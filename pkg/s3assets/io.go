@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/PrimerAI/go-micro-utils-public/gmu/s3"
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
+	"github.com/jlewi/hydros/api/v1alpha1"
 )
 
 // Load reads s3 assets from an S3AssetsList yaml file.

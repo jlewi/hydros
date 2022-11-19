@@ -34,10 +34,13 @@ const (
 // kind: PodEnvs
 // metadata:
 // annotations:
-//   kustomize.primer.ai/applytocm: both
+//
+//	kustomize.primer.ai/applytocm: both
+//
 // spec:
-//  remove:
-//    - DD_AGENT_HOST
+//
+//	remove:
+//	  - DD_AGENT_HOST
 //
 // Important: If you have a function that accumulates data (see for example readFn in extractor.go) note that the
 // init function of the filter gets invoked multiple times. Therefore, its important to not zero out the field doing

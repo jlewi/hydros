@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/ecrutil"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize"
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-logr/logr"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/ecrutil"
+	"github.com/jlewi/hydros/pkg/kustomize"
+	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"

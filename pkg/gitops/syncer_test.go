@@ -6,11 +6,11 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kustomize "sigs.k8s.io/kustomize/api/types"
 
-	kustomize2 "github.com/PrimerAI/hydros-public/pkg/kustomize"
+	kustomize2 "github.com/jlewi/hydros/pkg/kustomize"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/go-logr/zapr"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/util"
 	"go.uber.org/zap"
 
 	"github.com/google/go-cmp/cmp"

@@ -3,7 +3,7 @@ package configmap
 import (
 	"fmt"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
+	"github.com/jlewi/hydros/api/v1alpha1"
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )

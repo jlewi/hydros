@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/kustomize/fns/configmap"
-	imgFns "github.com/PrimerAI/hydros-public/pkg/kustomize/fns/images"
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/go-logr/logr"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/configmap"
+	imgFns "github.com/jlewi/hydros/pkg/kustomize/fns/images"
+	"github.com/jlewi/hydros/pkg/util"
 
 	"sigs.k8s.io/kustomize/api/filters/fsslice"
 	"sigs.k8s.io/kustomize/api/types"

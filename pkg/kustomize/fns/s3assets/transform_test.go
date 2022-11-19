@@ -97,7 +97,6 @@ data:
 `,
 		},
 
-
 		"non default": {
 			yaml: `
 apiVersion: fake

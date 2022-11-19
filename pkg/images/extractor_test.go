@@ -7,9 +7,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/util"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/util"
 	"gopkg.in/yaml.v3"
 )
 

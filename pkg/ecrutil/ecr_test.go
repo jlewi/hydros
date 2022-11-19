@@ -3,11 +3,11 @@ package ecrutil
 import (
 	"testing"
 
-	"github.com/PrimerAI/hydros-public/pkg/testutil"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/google/uuid"
+	"github.com/jlewi/hydros/pkg/testutil"
 )
 
 // This test depends on access to AWS dev; it will be skipped if the environment variable AWS_TESTS isn't set

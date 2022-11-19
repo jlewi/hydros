@@ -17,7 +17,7 @@ import (
 
 // RepoHelper provides a higher level API ontop of the GraphQL API.
 //
-// TODO(https://github.com/PrimerAI/hydros-public/issues/2): Migrage to github.com/shurcooL/githubv4
+// TODO(https://github.com/jlewi/hydros/issues/2): Migrage to github.com/shurcooL/githubv4
 // It is inspired by the higher level API in GitHub's GoLang CLI. A lot of the code is modified from that.
 //
 // We don't use the CLI The CLI authors suggested (https://github.com/cli/cli/issues/1327) that it would be better to use the API client
@@ -69,8 +69,9 @@ func WithLogger(log logr.Logger) Option {
 // CreatePr creates a pull request
 // baseBranch the branch into which your code should be merged.
 // forkRef the reference to the fork from which to create the PR
-// 	 Forkref will either be OWNER:BRANCH when a different repository is used as the fork.
-//	 or it will be just BRANCH when merging from a branch in the same Repo as Repo
+//
+//	Forkref will either be OWNER:BRANCH when a different repository is used as the fork.
+//	or it will be just BRANCH when merging from a branch in the same Repo as Repo
 func (h *RepoHelper) CreatePr(baseBranch, forkRef, prMessage string, labels []string) error {
 	log := h.log.WithValues("Repo", h.baseRepo.RepoName(), "Org", h.baseRepo.RepoOwner())
 	lines := strings.SplitN(prMessage, "\n", 2)

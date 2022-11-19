@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
-	"github.com/PrimerAI/hydros-public/api/v1alpha1"
-	"github.com/PrimerAI/hydros-public/pkg/util"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 func TestExtract(t *testing.T) {
@@ -24,7 +24,7 @@ func TestExtract(t *testing.T) {
 	actual, err := e.Extract(testDir)
 	assert.NoError(t, err, "Running extract failed")
 
-	expected := []string{"s3://our-bucket/key/model.zip", "s3://test-bucket/key/fake-model.zip"}
+	expected := []string{"s3://our-bucket/key/model.zip"}
 
 	assert.Equal(t, expected, actual)
 }
