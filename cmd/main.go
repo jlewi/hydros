@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/files"
+	"github.com/pkg/errors"
+
 	githubCmds "github.com/jlewi/hydros/cmd/github"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/hydros"
@@ -203,6 +206,19 @@ func newVersionCmd(w io.Writer) *cobra.Command {
 	return cmd
 }
 
+func readSecret(secret string) ([]byte, error) {
+	f := &files.Factory{}
+	h, err := f.Get(secret)
+	if err != nil {
+		return nil, err
+	}
+	r, err := h.NewReader(secret)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(r)
+}
+
 func apply(a applyOptions, path string, syncNames map[string]string) error {
 	log.Info("Reading file", "path", path)
 	rNodes, err := util.ReadYaml(path)
@@ -238,7 +254,11 @@ func apply(a applyOptions, path string, syncNames map[string]string) error {
 			}
 			syncNames[name] = path
 
-			manager, err := github.NewTransportManager(int64(aOptions.githubAppID), aOptions.secret, log)
+			secret, err := readSecret(aOptions.secret)
+			if err != nil {
+				return errors.Wrapf(err, "Could not read file: %v", aOptions.secret)
+			}
+			manager, err := github.NewTransportManager(int64(aOptions.githubAppID), secret, log)
 			if err != nil {
 				log.Error(err, "TransportManager creation failed")
 				return err
