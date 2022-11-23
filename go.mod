@@ -48,6 +48,7 @@ require (
 require (
 	cloud.google.com/go/secretmanager v1.9.0
 	github.com/PrimerAI/go-micro-utils-public/gmu v0.0.0-20220526222947-c3eb3c2c79c8
+	github.com/go-git/go-git/v5 v5.4.2
 	github.com/thanhpk/randstr v1.0.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	google.golang.org/grpc v1.50.1
@@ -68,8 +69,10 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/Microsoft/hcsshim v0.8.23 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
+	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/alecthomas/chroma v0.8.2 // indirect
 	github.com/apex/log v1.9.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
@@ -101,6 +104,8 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/go-git/gcfg v1.5.0 // indirect
+	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
