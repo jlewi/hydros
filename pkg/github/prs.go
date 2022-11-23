@@ -239,6 +239,7 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) error {
 				url = existingPR.URL
 			}
 			h.log.Info("A pull request for the branch already exists", "forkRef", forkRef, "baseBranch", h.BaseBranch, "prUrl", url)
+			return nil
 		}
 	}
 	h.log.Info("Created PR", "url", pr.URL)
@@ -319,7 +320,23 @@ func (h *RepoHelper) PullRequestForBranch() (*PullRequest, error) {
 // 1. Clone the repository if it hasn't already been cloned
 // 2. Create a branch if one doesn't already exist.
 //
-// If dropChanges is true if the working tree is direty the changes will be ignored.
+// If dropChanges is true if the working tree is dirty the changes will be ignored.
+//
+//	if the tree is dirty and dropChanges is false then an error is returned because we can't check out the local
+//	branch.
+//
+// Typically PrepareBranch should be called with dropChanges=true.
+//
+// If a local branch already exists it will be deleted and the local branch
+// will be recreated from the latest baseBranch. This is to ensure the branch is created from the latest code on
+// the base branch.
+//
+// N.B the semantics are based on how hydros and similar automation is expected to work. Each time hydros runs
+// hydrate it should run on the head commit of the baseBranch. So if a local/remote branch already exists it
+// represents a previous sync and we want to completely override it. When a hydros sync successfully runs it should
+// result in a PR. The existence of the PR should be used to block hydros from recreating or otherwise modifying
+// the branch until the PR is merged or closed. These semantics are designed to allow humans to interact with
+// the PR and potentially edit it before merging.
 func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 	log := zapr.NewLogger(zap.L())
 	log = log.WithValues("org", h.baseRepo.RepoOwner(), "repo", h.baseRepo.RepoName(), "dir", h.fullDir)
@@ -367,6 +384,8 @@ func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 	if err := r.Fetch(&git.FetchOptions{
 		RemoteName: h.remote,
 		Auth:       appAuth,
+		// TODO(jeremy): Do we need to specify refspec?
+		// RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/*:refs/remotes/%v/*", h.remote))},
 	}); err != nil {
 		// Fetch returns an error if its already up to date and we want to ignore that.
 		if err.Error() != "already up-to-date" {
@@ -422,32 +441,24 @@ func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 	// Try to get a reference to the local branch. We use this to determine whether the branch already exists
 	branchRef, err := r.Reference(h.BranchRef(), false)
 
+	if err != nil && err.Error() != "reference not found" {
+		return err
+	}
+
+	if err == nil {
+		// Branch already exists
+		log.Info("Branch already exists; deleting it.", "branch", h.BranchName, "local", branchRef.Hash(), "base", baseRef.Hash())
+
+		if err := r.Storer.RemoveReference(branchRef.Name()); err != nil {
+			return errors.Wrapf(err, "Failed to delete existing local branch %v", branchRef.Name())
+		}
+	}
+
 	checkoutOptions := &git.CheckoutOptions{
 		Branch: h.BranchRef(),
-		// TODO(jeremy): add an option to set Force to true to drop local changes?
-		Force: dropChanges,
-	}
-	if err != nil {
-		if err.Error() != "reference not found" {
-			return err
-		}
-		// Since the branch doesn't exist create it.
-		// We specify the Hash to be the latest hash on the remote branch
-		checkoutOptions.Create = true
-		checkoutOptions.Hash = baseRef.Hash()
-	} else {
-		log.Info("Got local and base references", "local", branchRef.Hash(), "base", baseRef.Hash())
-		if branchRef.Hash() != baseRef.Hash() {
-			// TODO(jeremy): Can/should we update the local branch in this case? Rather than just overwriting the
-			// branch.
-			if dropChanges {
-				log.Info("Branch already exists but is not based on the baseref; the changes will be overwritten", "local", branchRef.Hash(), "base", baseRef.Hash())
-			} else {
-				return errors.Errorf("PrepareBranch failed. The branch %v exists at hash %v but the baseRef %v is at hash %v", h.BranchName, branchRef.Hash(), h.BaseBranch, baseRef.Hash())
-			}
-		}
-		// since the branch already exists we just have to check it out
-		checkoutOptions.Create = false
+		Force:  dropChanges,
+		Create: true,
+		Hash:   baseRef.Hash(),
 	}
 
 	log.Info("Checking out branch", "name", h.BaseBranch, "baseRef", h.RemoteBaseRef())
@@ -546,4 +557,9 @@ func (h *RepoHelper) BranchRef() plumbing.ReferenceName {
 // This is the local copy of the remote branch.
 func (h *RepoHelper) RemoteBaseRef() plumbing.ReferenceName {
 	return plumbing.ReferenceName(fmt.Sprintf("refs/remotes/%v/%v", h.remote, h.BaseBranch))
+}
+
+// Dir returns the directory of the repository.
+func (h *RepoHelper) Dir() string {
+	return h.fullDir
 }
