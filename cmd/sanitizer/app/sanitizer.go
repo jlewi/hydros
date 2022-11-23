@@ -86,7 +86,7 @@ func (s *Sanitizer) Run(source string, dest string) error {
 		log.Info("Adding directory to list of excludes", "dir", filepath.Join(source, k))
 	}
 
-	topFiles, err := ioutil.ReadDir(source)
+	topFiles, err := os.ReadDir(source)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read directory: %v", source)
 	}

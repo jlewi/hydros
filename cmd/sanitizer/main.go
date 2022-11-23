@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/PrimerAI/go-micro-utils-public/gmu/logging"
@@ -63,7 +62,7 @@ func NewRunCmd() *cobra.Command {
 					input = wDir
 				}
 
-				b, err := ioutil.ReadFile(config)
+				b, err := os.ReadFile(config)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to read config from path; %v", config)
 				}

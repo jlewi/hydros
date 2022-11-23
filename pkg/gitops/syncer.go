@@ -146,7 +146,18 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 		return nil, errors.Wrapf(err, "Failed to get transport for repo %v/%v; Is the GitHub app installed in that repo?", dRepo.Org, dRepo.Repo)
 	}
 
-	repoHelper, err := github.NewGithubRepoHelper(tr, ghrepo.New(dRepo.Org, dRepo.Repo), github.WithLogger(s.log))
+	args := &github.RepoHelperArgs{
+		BaseRepo:   ghrepo.New(dRepo.Org, dRepo.Repo),
+		GhTr:       tr,
+		FullDir:    filepath.Join(s.workDir, destKey),
+		Name:       "hydros",
+		Email:      "hydros@yourdomain.com",
+		Remote:     "origin",
+		BranchName: s.manifest.Spec.ForkRepo.Branch,
+		BaseBranch: dRepo.Branch,
+	}
+
+	repoHelper, err := github.NewGithubRepoHelper(args)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +287,7 @@ func (s *Syncer) RunOnce(force bool) error {
 	if s.manifest.Spec.ForkRepo.Org != s.manifest.Spec.DestRepo.Org {
 		headBranchRef = s.manifest.Spec.ForkRepo.Org + ":" + headBranchRef
 	}
-	existingPR, err := s.repoHelper.PullRequestForBranch(s.manifest.Spec.DestRepo.Branch, headBranchRef)
+	existingPR, err := s.repoHelper.PullRequestForBranch()
 	if err != nil {
 		log.Error(err, "Failed to check if there is an existing PR", "headBranchRef", headBranchRef)
 		return err
@@ -518,15 +529,9 @@ func (s *Syncer) RunOnce(force bool) error {
 	}
 
 	// Create the PR.
-	forkRef := s.manifest.Spec.ForkRepo.Branch
-
-	if s.manifest.Spec.ForkRepo.Org != s.manifest.Spec.DestRepo.Org {
-		forkRef = s.manifest.Spec.ForkRepo.Org + ":" + s.manifest.Spec.ForkRepo.Branch
-	}
-
 	prMessage := buildPrMessage(s.manifest, changedImages)
 
-	if err := s.repoHelper.CreatePr(s.manifest.Spec.DestRepo.Branch, forkRef, prMessage, s.manifest.Spec.PrLabels); err != nil {
+	if err := s.repoHelper.CreatePr(prMessage, s.manifest.Spec.PrLabels); err != nil {
 		log.Error(err, "Failed to create pr")
 		return err
 	}
@@ -588,8 +593,8 @@ func (s *Syncer) cloneRepos() error {
 		// Update the remote URL to refresh the token
 		// Then fetch it. Also make sure user name is set.
 		commands := [][]string{
-			{"git", "config", "user.email", "hydros@notvalid.primer.ai"},
 			{"git", "config", "user.name", "hydros"},
+			{"git", "config", "user.email", "hydros@notvalid.primer.ai"},
 			{"git", "remote", "set-url", "origin", url},
 			{"git", "fetch", "origin"},
 			// if we don't force code.abbrev to be 7 digits then we might get a variable

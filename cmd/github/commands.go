@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/jlewi/hydros/pkg/files"
@@ -62,7 +61,7 @@ func NewAppTokenCmd(w io.Writer, level *string, devLogger *bool) *cobra.Command 
 				if envFile != "" {
 					fmt.Fprintf(w, "Writing token to environment file %v", envFile)
 					perm := os.FileMode(int(0o700))
-					err := ioutil.WriteFile(envFile, []byte(fmt.Sprintf("export GITHUB_TOKEN=%v", token)), perm)
+					err := os.WriteFile(envFile, []byte(fmt.Sprintf("export GITHUB_TOKEN=%v", token)), perm)
 					if err != nil {
 						return errors.Wrapf(err, "Failed to write file %v", envFile)
 					}

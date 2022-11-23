@@ -13,3 +13,13 @@ communities about potential areas of collaboration.
 
 At this point in time, hydros is unlikely to work out of box for anyone outside of Primer
 as it makes several decisions specific to how Primer does CI/CD.
+
+
+# Binaries
+
+There are three binaries currently being built out of this repository
+
+* hydros - This is the main binary in this repository
+* sanitizer - This is a utility to help sanitize internal code before publishing it as public open source. It was
+   initially developed to aid in open sourcing hydros. It was inspired by a similar tool used at Google.
+* 
