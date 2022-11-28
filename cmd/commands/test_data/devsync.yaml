@@ -1,0 +1,24 @@
+# This configuration is for taking over dev
+apiVersion: mlp.primer.ai/v1alpha1
+kind: ManifestSync
+metadata:
+  name: pushloccal-test
+spec:
+  sourceRepo:
+    org: jlewi
+    repo: hydros
+    branch: dev-takeover
+  forkRepo:
+    org: jlewi
+    repo: hydros-hydrated
+    branch: hydros/dev-takeover
+  destRepo:
+    org: jlewi
+    repo: hydros-hydrated
+    branch: main
+  sourcePath: ""
+  selector:
+    matchLabels:
+      app: hydros
+      environment: dev
+  destPath: hydros

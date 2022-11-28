@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jlewi/hydros/cmd/commands"
+
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/pkg/errors"
 
@@ -174,6 +176,7 @@ func init() {
 	rootCmd.AddCommand(tagCmd)
 	rootCmd.AddCommand(newVersionCmd(os.Stdout))
 	rootCmd.AddCommand(githubCmds.NewAppTokenCmd(os.Stdout, &gOptions.level, &gOptions.devLogger))
+	rootCmd.AddCommand(commands.NewTakeOverCmd())
 
 	rootCmd.PersistentFlags().BoolVar(&gOptions.devLogger, "dev-logger", false, "If true configure the logger for development; i.e. non-json output")
 	rootCmd.PersistentFlags().StringVarP(&gOptions.level, "log-level", "", "info", "Log level: error info or debug")

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/gitutil"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -402,6 +404,8 @@ func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 
 	// Set email and name of the author
 	// This is equivalent to git config user.email
+	// TODO(jeremy): I'm not sure we need to do this. I believe the name and email get specified explicitly in
+	// the options to push and don't get inherited from the config automatically.
 	log.Info("Updating email and name for commits")
 	cfg.User.Email = h.email
 	cfg.User.Name = h.name
@@ -479,6 +483,7 @@ func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 func (h *RepoHelper) CommitAndPush(message string, force bool) error {
 	log := zapr.NewLogger(zap.L())
 	log = log.WithValues("org", h.baseRepo.RepoOwner(), "repo", h.baseRepo.RepoName(), "dir", h.fullDir)
+
 	// Open the repository
 	r, err := git.PlainOpenWithOptions(h.fullDir, &git.PlainOpenOptions{})
 	if err != nil {
@@ -495,6 +500,10 @@ func (h *RepoHelper) CommitAndPush(message string, force bool) error {
 	if status.IsClean() {
 		log.Info("No changes to commit")
 		return nil
+	}
+
+	if err := gitutil.AddGitignoreToWorktree(w, h.fullDir); err != nil {
+		return errors.Wrapf(err, "Failed to add gitignore patterns")
 	}
 
 	if err := w.AddWithOptions(&git.AddOptions{All: true}); err != nil {

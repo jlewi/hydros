@@ -2,6 +2,7 @@ package v1alpha1
 
 const (
 	// Group for MLP tasks.
+	// TODO(jeremy): we should change this
 	Group = "mlp.primer.ai"
 	// Version for tasks.
 	Version = "v1alpha1"

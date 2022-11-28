@@ -12,6 +12,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/jlewi/hydros/pkg/gitutil"
+
 	"github.com/jlewi/hydros/pkg/ecrutil"
 	"github.com/jlewi/hydros/pkg/skaffold"
 
@@ -536,6 +542,146 @@ func (s *Syncer) RunOnce(force bool) error {
 		return err
 	}
 	log.Info("Sync succeeded")
+	return nil
+}
+
+// PushLocal commits any changes in wDir and then pushes those changes to the branch of the sourceRepo
+// A sync can then be applied.
+// keyFile is the private PEM key file to use. If not specified it will try to load one from the home directory
+func (s *Syncer) PushLocal(wDir string, keyFile string) error {
+	log := s.log
+
+	if wDir == "" {
+		var err error
+		wDir, err = os.Getwd()
+		if err != nil {
+			return errors.Wrapf(err, "Failed to get current directory")
+		}
+	}
+
+	root, err := gitutil.LocateRoot(wDir)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to locate git repo for %v", wDir)
+	}
+
+	if keyFile == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return errors.Wrapf(err, "Could not get home directory")
+		}
+		keyFile = filepath.Join(home, ".ssh", "id_ed25519")
+		log.Info("No keyfile specified using default", "keyfile", keyFile)
+	}
+	// GitHub uses git for the username.
+	appAuth, err := ssh.NewPublicKeysFromFile("git", keyFile, "")
+	if err != nil {
+		return errors.Wrapf(err, "Failed to load ssh key")
+	}
+	log.Info("Located root of git repository", "root", root, "wDir", wDir)
+	// Open the repository
+	r, err := git.PlainOpenWithOptions(root, &git.PlainOpenOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Could not open respoistory at %v; ensure the directory contains a git repo", root)
+	}
+
+	w, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	if err := gitutil.AddGitignoreToWorktree(w, root); err != nil {
+		return errors.Wrapf(err, "Failed to add gitignore patterns")
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return err
+	}
+
+	// We need to identify the remote name for the source branch
+	// config reads .git/config
+	// We can use this to determine how the repository is setup to figure out what we need to do
+	cfg, err := r.Config()
+	if err != nil {
+		return err
+	}
+
+	if !status.IsClean() {
+		log.Info("committing all files")
+		if err := w.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+			return err
+		}
+
+		user, err := gitutil.LoadUser(r)
+		if err != nil {
+			return err
+		}
+		message := "hydros automatically committing all files before running a sync."
+		commit, err := w.Commit(message, &git.CommitOptions{
+			Author: &object.Signature{
+				// Use the name and email as specified in the cfg file.
+				Name:  user.Name,
+				Email: user.Email,
+				When:  time.Now(),
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+		// Prints the current HEAD to verify that all worked well.
+		obj, err := r.CommitObject(commit)
+		if err != nil {
+			return err
+		}
+		log.Info("Commit succeeded", "commit", obj.String())
+	}
+
+	org := s.manifest.Spec.SourceRepo.Org
+	repo := s.manifest.Spec.SourceRepo.Repo
+	sourceRepo := ghrepo.New(org, repo)
+	remoteName := func() string {
+		for _, r := range cfg.Remotes {
+			for _, u := range r.URLs {
+				remote, err := ghrepo.FromUrlOrName(u)
+				if err != nil {
+					log.Error(err, "Could not parse URL for remote repository", "name", r.Name, "url", u)
+				}
+				if ghrepo.IsSame(sourceRepo, remote) {
+					return r.Name
+				}
+			}
+		}
+		return ""
+	}()
+
+	if remoteName == "" {
+		return errors.Errorf("Could not find remote repo for repository %v/%v", org, repo)
+	}
+
+	head, err := r.Head()
+	if err != nil {
+		return err
+	}
+	// The refspec to push
+	dst := fmt.Sprintf("refs/heads/%v", s.manifest.Spec.SourceRepo.Branch)
+	refSpec := head.Name().String() + ":" + dst
+
+	// Push changes to the remote branch.
+	if err := r.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		RefSpecs: []config.RefSpec{
+			config.RefSpec(refSpec),
+		},
+		Progress: os.Stdout,
+		Force:    true,
+		Auth:     appAuth,
+	}); err != nil && err.Error() != "already up-to-date" {
+		return err
+	}
+
+	log.Info("Push succeeded")
 	return nil
 }
 
