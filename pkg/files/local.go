@@ -14,7 +14,7 @@ func (h *LocalFileHelper) NewReader(uri string) (io.Reader, error) {
 	reader, err := os.Open(uri)
 
 	if err != nil {
-		return nil, errors.WithStack(errors.Wrapf(err, "Clould not read: %v", uri))
+		return nil, errors.WithStack(errors.Wrapf(err, "Could not read: %v", uri))
 	}
 
 	return reader, nil
@@ -33,7 +33,7 @@ func (h *LocalFileHelper) NewWriter(uri string) (io.Writer, error) {
 	writer, err := os.Create(uri)
 
 	if err != nil {
-		return nil, errors.WithStack(errors.Wrapf(err, "Clould not write: %v", uri))
+		return nil, errors.WithStack(errors.Wrapf(err, "Could not write: %v", uri))
 	}
 
 	return writer, nil
