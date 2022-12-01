@@ -179,7 +179,7 @@ func MergePR(client *http.Client, repo ghrepo.Interface, number int) error {
 		return err
 	}
 
-	return nil
+	return err
 }
 
 // blockedReason translates various MergeStateStatus GraphQL values into human-readable reason
@@ -223,6 +223,14 @@ type EnablePullRequestAutoMergeInput struct {
 	githubv4.MergePullRequestInput
 }
 
+var (
+	cleanMatcher *regexp.Regexp
+)
+
+func init() {
+	cleanMatcher = regexp.MustCompile(".*clean status.*")
+}
+
 // mergePullRequest is a helper function to actually merge the payload.
 // N.B. This function supports all the different merge methods because the code was inherited from GitHub's cli
 // so why not? But the higher APIs that call it don't support that.
@@ -230,6 +238,7 @@ type EnablePullRequestAutoMergeInput struct {
 // This will either issue an https://docs.github.com/en/graphql/reference/mutations#enablepullrequestautomerge
 // or a https://docs.github.com/en/graphql/reference/mutations#mergepullrequest depending on the value of auto.
 func mergePullRequest(client *http.Client, payload mergePayload) error {
+	log := zapr.NewLogger(zap.L()).WithValues("prID", payload.pullRequestID)
 	input := githubv4.MergePullRequestInput{
 		PullRequestID: githubv4.ID(payload.pullRequestID),
 	}
@@ -269,7 +278,33 @@ func mergePullRequest(client *http.Client, payload mergePayload) error {
 			} `graphql:"enablePullRequestAutoMerge(input: $input)"`
 		}
 		variables["input"] = EnablePullRequestAutoMergeInput{input}
-		return gql.Mutate(payload.repo.RepoHost(), "PullRequestAutoMerge", &mutation, variables)
+		err := gql.Mutate(payload.repo.RepoHost(), "PullRequestAutoMerge", &mutation, variables)
+
+		if err == nil {
+			return nil
+		}
+		gErr, ok := err.(api.GraphQLError)
+		if !ok {
+			return nil
+		}
+
+		// There is a race condition since in between when we fetched PR status and when we try to enable auto merge
+		// the PR might have become ready. So if we detect the PR is in the ready to be merged state we will try
+		// to merge it.
+		tryMergePullRequest := false
+		for _, e := range gErr.Errors {
+			// Print out error information in hopes of learning that we can use the type rather than using a regex
+			// on the message.
+			log.Info("Error merging pull request", "message", e.Message, "type", e.Type)
+			if cleanMatcher.MatchString(e.Message) {
+				tryMergePullRequest = true
+			}
+		}
+
+		if !tryMergePullRequest {
+			return err
+		}
+		log.Info("Enabling AutoMerge failed because the PR is now ready to be merged")
 	}
 
 	var mutation struct {
