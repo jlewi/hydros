@@ -12,26 +12,40 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/jlewi/hydros/pkg/util"
-	"github.com/kubeflow/testing/go/pkg/ghrepo"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
 const (
-	appID      = int64(263648)
-	privateKey = "gcpSecretManager:///projects/dev-starling/secrets/annotater-bot/versions/latest"
+	// TODO(jeremy): Delete this commented out code we should be switched over to using the hydros.
+	// appID      = int64(263648)
+	// privateKey = "gcpSecretManager:///projects/dev-starling/secrets/annotater-bot/versions/latest"
+	appID      = int64(266158)
+	privateKey = "secrets/hydros-bot.2022-11-27.private-key.pem"
+
+	// Use the repository https://github.com/jlewi/hydros-hydrated for testing
+	testOrg  = "jlewi"
+	testRepo = "hydros-hydrated"
 )
 
 func getTransportManager() (*TransportManager, error) {
 	log := zapr.NewLogger(zap.L())
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	hydrosKeyFile := filepath.Join(home, privateKey)
 
 	f := &files.Factory{}
 	h, err := f.Get(privateKey)
 	if err != nil {
 		return nil, err
 	}
-	r, err := h.NewReader(privateKey)
+	r, err := h.NewReader(hydrosKeyFile)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +95,7 @@ func Test_PrepareBranch(t *testing.T) {
 	expected := "a9b473353b73a4cd5e2c8809c4c16a0e9e164129"
 
 	args := &RepoHelperArgs{
-		BaseRepo:   ghrepo.New("starlingai", "gitops-test-repo"),
+		BaseRepo:   ghrepo.New(testOrg, testRepo),
 		GhTr:       nil,
 		Name:       "notset",
 		Email:      "notset@acme.com",
@@ -157,9 +171,9 @@ func Test_PrepareBranch(t *testing.T) {
 	}
 }
 
-// Test_PrepareCommitAndPush tests that we can go through the full cycle of checking out a branch,
-// modifying it, and then committing and pushing the changes.
-func Test_PrepareCommitAndPush(t *testing.T) {
+// Test_FullLifecycle tests that we can go through the full cycle of checking out a branch,
+// modifying it, and then creating and merging a PR.
+func Test_FullLifecycle(t *testing.T) {
 	util.SetupLogger("debug", true)
 
 	tempDir, err := os.MkdirTemp("", "testClone")
@@ -171,11 +185,11 @@ func Test_PrepareCommitAndPush(t *testing.T) {
 	now := time.Now().Format("20060102-030405")
 
 	args := &RepoHelperArgs{
-		BaseRepo:   ghrepo.New("starlingai", "gitops-test-repo"),
+		BaseRepo:   ghrepo.New(testOrg, testRepo),
 		GhTr:       nil,
-		Name:       "notset",
-		Email:      "notset@acme.com",
-		BaseBranch: "test-cases/clone-1",
+		Name:       "hydros",
+		Email:      "hydros@hydros.io",
+		BaseBranch: "main",
 		BranchName: "clone-test" + now,
 	}
 
@@ -212,10 +226,19 @@ func Test_PrepareCommitAndPush(t *testing.T) {
 		if err := repo.CommitAndPush("Commit from test", true); err != nil {
 			return err
 		}
+
+		pr, err := repo.CreatePr("Hydros e2e test", []string{})
+		if err != nil {
+			return err
+		}
+
+		if err := repo.MergePR(pr.Number); err != nil {
+			return err
+		}
 		return nil
 	}()
 
 	if err != nil {
-		t.Fatalf("Failed to clone the repository; error %+v", err)
+		t.Fatalf("Test failed; error %+v", err)
 	}
 }

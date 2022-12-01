@@ -2,6 +2,7 @@ package github
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,10 +17,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/cli/cli/api"
+	"github.com/cli/cli/v2/api"
+	ghAPI "github.com/cli/go-gh/pkg/api"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/kubeflow/testing/go/pkg/ghrepo"
+	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/pkg/errors"
 	"github.com/shurcooL/githubv4"
 	"go.uber.org/zap"
@@ -121,10 +123,12 @@ func NewGithubRepoHelper(args *RepoHelperArgs) (*RepoHelper, error) {
 		args.Email = "unidentified@nota.real.domain.com"
 		log.Info("No email specified; using default", "name", args.Email)
 	}
-
+	// N.B. We aren't guaranteed to be using the same http client for Git that other parts of the code base is using
+	// Thats not ideal. However, the cli/cli Client package doesn't give us a way to inject an http client.
+	client := &http.Client{Transport: args.GhTr}
 	h := &RepoHelper{
 		transport:  args.GhTr,
-		client:     api.NewClient(api.ReplaceTripper(args.GhTr)),
+		client:     api.NewClientFromHTTP(client),
 		baseRepo:   args.BaseRepo,
 		log:        zapr.NewLogger(zap.L()),
 		fullDir:    args.FullDir,
@@ -143,7 +147,7 @@ func NewGithubRepoHelper(args *RepoHelperArgs) (*RepoHelper, error) {
 //
 //	Forkref will either be OWNER:BRANCH when a different repository is used as the fork.
 //	or it will be just BRANCH when merging from a branch in the same Repo as Repo
-func (h *RepoHelper) CreatePr(prMessage string, labels []string) error {
+func (h *RepoHelper) CreatePr(prMessage string, labels []string) (*api.PullRequest, error) {
 	log := h.log.WithValues("Repo", h.baseRepo.RepoName(), "Org", h.baseRepo.RepoOwner())
 	lines := strings.SplitN(prMessage, "\n", 2)
 
@@ -169,7 +173,7 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) error {
 		repoLabels, err := api.RepoLabels(h.client, h.baseRepo)
 		if err != nil {
 			log.Error(err, "Failed to fetch Repo labels")
-			return err
+			return nil, err
 		}
 
 		labelNameToID := map[string]string{}
@@ -206,26 +210,26 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) error {
 	// Query the GitHub API to get actual repository info.
 	baseRepository, err := api.GitHubRepo(h.client, h.baseRepo)
 	if err != nil {
-		return errors.WithStack(errors.Wrapf(err, "there was an error getting repository information"))
+		return nil, errors.WithStack(errors.Wrapf(err, "there was an error getting repository information"))
 	}
 	pr, err := api.CreatePullRequest(h.client, baseRepository, params)
 	if err != nil {
-		graphErr, ok := err.(*api.GraphQLErrorResponse)
+		graphErr, ok := err.(*ghAPI.GQLError)
 
 		if !ok {
 			h.log.Error(err, "There was a problem creating the PR,")
-			return err
+			return nil, err
 		}
 
 		matcher, cErr := regexp.Compile("A pull request already exists.*")
 		if cErr != nil {
 			log.Error(cErr, "Failed to compile regex; could not check if err is PR exists", "graphErr", graphErr)
-			return err
+			return nil, err
 		}
 		for _, gErr := range graphErr.Errors {
 			if !matcher.MatchString(gErr.Message) {
 				h.log.Error(err, "There was a problem creating the PR,")
-				return err
+				return nil, err
 			}
 			h.log.Info(gErr.Message)
 
@@ -233,7 +237,7 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) error {
 			existingPR, err := h.PullRequestForBranch()
 			if err != nil {
 				h.log.Error(err, "Failed to locate existing PR", "forkRef", forkRef, "baseBranch", h.BaseBranch)
-				return err
+				return nil, err
 			}
 
 			url := ""
@@ -241,14 +245,28 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) error {
 				url = existingPR.URL
 			}
 			h.log.Info("A pull request for the branch already exists", "forkRef", forkRef, "baseBranch", h.BaseBranch, "prUrl", url)
-			return nil
+
+			// TODO(jeremy): This is pretty kludgy. Can we get rid of our copy of pullrequest and just use the CLI's
+			// version.
+			pr := &api.PullRequest{
+				ID:     existingPR.ID,
+				URL:    existingPR.URL,
+				Number: existingPR.Number,
+			}
+			return pr, nil
 		}
 	}
 	h.log.Info("Created PR", "url", pr.URL)
-	return nil
+
+	// When a PR is created number isn't populated but we can get it from the URL
+	_, number, err := parsePRURL(pr.URL)
+	pr.Number = number
+
+	return pr, err
 }
 
 // PullRequestForBranch returns the PR for the given branch if it exists and nil if no PR exists.
+// TODO(jeremy): Can we change this to api.PullRequest?
 func (h *RepoHelper) PullRequestForBranch() (*PullRequest, error) {
 	baseBranch := h.BaseBranch
 	headBranch := h.BranchName
@@ -298,7 +316,7 @@ func (h *RepoHelper) PullRequestForBranch() (*PullRequest, error) {
 	}
 
 	var resp response
-	err := h.client.GraphQL(query, variables, &resp)
+	err := h.client.GraphQL(h.baseRepo.RepoHost(), query, variables, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -571,4 +589,46 @@ func (h *RepoHelper) RemoteBaseRef() plumbing.ReferenceName {
 // Dir returns the directory of the repository.
 func (h *RepoHelper) Dir() string {
 	return h.fullDir
+}
+
+// MergePR tries to merge the PR. This means either
+// 1. enabling auto merge if a merge queue is required
+// 2. merging right away if able
+func (h *RepoHelper) MergePR(prNumber int) error {
+	client := &http.Client{Transport: h.transport}
+	if err := MergePR(client, h.baseRepo, prNumber); err != nil {
+		h.log.Error(err, "Failed to merge PR (or enable auto merge)")
+		return errors.Wrapf(err, "Failed to merge PR (or enable auto merge)")
+	}
+	return nil
+}
+
+func fetchPR(httpClient *http.Client, repo ghrepo.Interface, number int, fields []string) (*api.PullRequest, error) {
+	type response struct {
+		Repository struct {
+			PullRequest api.PullRequest
+		}
+	}
+
+	query := fmt.Sprintf(`
+	query PullRequestByNumber($owner: String!, $repo: String!, $pr_number: Int!) {
+		repository(owner: $owner, name: $repo) {
+			pullRequest(number: $pr_number) {%s}
+		}
+	}`, api.PullRequestGraphQL(fields))
+
+	variables := map[string]interface{}{
+		"owner":     repo.RepoOwner(),
+		"repo":      repo.RepoName(),
+		"pr_number": number,
+	}
+
+	var resp response
+	client := api.NewClientFromHTTP(httpClient)
+	err := client.GraphQL(repo.RepoHost(), query, variables, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp.Repository.PullRequest, nil
 }

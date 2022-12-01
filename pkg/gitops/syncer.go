@@ -35,8 +35,8 @@ import (
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/github"
+	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/jlewi/hydros/pkg/util"
-	"github.com/kubeflow/testing/go/pkg/ghrepo"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -537,10 +537,19 @@ func (s *Syncer) RunOnce(force bool) error {
 	// Create the PR.
 	prMessage := buildPrMessage(s.manifest, changedImages)
 
-	if err := s.repoHelper.CreatePr(prMessage, s.manifest.Spec.PrLabels); err != nil {
+	pr, err := s.repoHelper.CreatePr(prMessage, s.manifest.Spec.PrLabels)
+	if err != nil {
 		log.Error(err, "Failed to create pr")
 		return err
 	}
+
+	// EnableAutoMerge or merge the PR automatically. If you don't want the PR to be automerged you should
+	// set up appropriate branch protections e.g. require approvers.
+	if err := s.repoHelper.MergePR(pr.Number); err != nil {
+		log.Error(err, "Failed to merge or enable automerge on pr", "number", pr.Number, "url", pr.URL)
+		return err
+	}
+
 	log.Info("Sync succeeded")
 	return nil
 }
@@ -644,7 +653,7 @@ func (s *Syncer) PushLocal(wDir string, keyFile string) error {
 	remoteName := func() string {
 		for _, r := range cfg.Remotes {
 			for _, u := range r.URLs {
-				remote, err := ghrepo.FromUrlOrName(u)
+				remote, err := ghrepo.FromFullName(u)
 				if err != nil {
 					log.Error(err, "Could not parse URL for remote repository", "name", r.Name, "url", u)
 				}
