@@ -300,7 +300,14 @@ func (s *Syncer) RunOnce(force bool) error {
 	}
 
 	if existingPR != nil {
-		log.Info("PR Already Exists so not syncing. Merge or Close the PR to force a new sync.", "pr", existingPR.URL)
+		log.Info("PR Already Exists; attempting to merge it.", "pr", existingPR.URL)
+		if err := s.repoHelper.MergePR(existingPR.Number); err != nil {
+			log.Error(err, "Failed to merge or enable automerge on pr", "number", existingPR.Number, "pr", existingPR.URL)
+			return err
+		}
+		// TODO(jeremy): Ideally if the PR is merged immediately we should keep going with the sync. Since
+		// there could be new changes to sync. On the other hand if it was enqueued then we should return because
+		// we want to wait for it to merge.
 		return nil
 	}
 
