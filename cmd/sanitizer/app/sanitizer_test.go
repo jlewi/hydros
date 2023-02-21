@@ -12,7 +12,7 @@ import (
 
 // Not really a unittest as we try to sanitize the hydros directory
 func Test_sanitize(t *testing.T) {
-	dir, err := ioutil.TempDir("", "testSanitize")
+	dir, err := os.MkdirTemp("", "testSanitize")
 	if err != nil {
 		t.Fatalf("Failed to create temporary directory; error %v", err)
 	}
