@@ -594,13 +594,69 @@ func (h *RepoHelper) Dir() string {
 // MergePR tries to merge the PR. This means either
 // 1. enabling auto merge if a merge queue is required
 // 2. merging right away if able
-func (h *RepoHelper) MergePR(prNumber int) error {
+func (h *RepoHelper) MergePR(prNumber int) (PRMergeState, error) {
 	client := &http.Client{Transport: h.transport}
-	if err := MergePR(client, h.baseRepo, prNumber); err != nil {
-		h.log.Error(err, "Failed to merge PR (or enable auto merge)")
-		return errors.Wrapf(err, "Failed to merge PR (or enable auto merge)")
+
+	return MergePR(client, h.baseRepo, prNumber)
+}
+
+// MergeAndWait merges the PR and waits for it to be merged.
+func (h *RepoHelper) MergeAndWait(prNumber int, timeout time.Duration) (PRMergeState, error) {
+	done := false
+	log := h.log.WithValues("number", prNumber)
+	wait := 10 * time.Second
+	for endTime := time.Now().Add(timeout); endTime.After(time.Now()) && !done; {
+		state := func() PRMergeState {
+			pr, err := h.FetchPR(prNumber)
+			if err != nil {
+				log.Error(err, "Failed to fetch PR; unable to confirm if its been merged")
+				return UnknownState
+			}
+
+			if pr.State == MergeStateStatusMerged {
+				log.Info("PR has been merged", "pr", pr.URL)
+				return MergedState
+			}
+			if pr.IsInMergeQueue {
+				log.Info("PR is in merge queue", "pr", pr.URL)
+				return EnqueuedState
+			}
+
+			log.Info("PR is not in merge queue; attempting to merge", "pr", pr.URL)
+			state, err := h.MergePR(pr.Number)
+			if err != nil {
+				log.Error(err, "Failed to merge pr", "number", pr.Number, "url", pr.URL)
+			}
+			return state
+		}()
+
+		switch state {
+		case ClosedState:
+			fallthrough
+		case MergedState:
+			return state, nil
+		case EnqueuedState:
+			fallthrough
+		case UnknownState:
+			fallthrough
+		case BlockedState:
+			fallthrough
+		default:
+			if endTime.After(time.Now().Add(wait)) {
+				time.Sleep(wait)
+			}
+		}
 	}
-	return nil
+
+	return UnknownState, errors.Errorf("Timed out waiting for PR to merge")
+}
+
+func (h *RepoHelper) FetchPR(prNumber int) (*api.PullRequest, error) {
+	// We need to set the appropriate header in oder to get merge queue status.
+	transport := &addAcceptHeaderTransport{T: h.transport}
+	client := &http.Client{Transport: transport}
+	fields := []string{"id", "number", "state", "title", "lastCommit", "mergeStateStatus", "headRepositoryOwner", "headRefName", "baseRefName", "headRefOid"}
+	return fetchPR(client, h.baseRepo, prNumber, fields)
 }
 
 func fetchPR(httpClient *http.Client, repo ghrepo.Interface, number int, fields []string) (*api.PullRequest, error) {

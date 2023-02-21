@@ -301,14 +301,16 @@ func (s *Syncer) RunOnce(force bool) error {
 
 	if existingPR != nil {
 		log.Info("PR Already Exists; attempting to merge it.", "pr", existingPR.URL)
-		if err := s.repoHelper.MergePR(existingPR.Number); err != nil {
-			log.Error(err, "Failed to merge or enable automerge on pr", "number", existingPR.Number, "pr", existingPR.URL)
+		state, err := s.repoHelper.MergeAndWait(existingPR.Number, 3*time.Minute)
+		if err != nil {
+			log.Error(err, "Failed to Merge existing PR unable to continue with sync", "number", existingPR.Number, "pr", existingPR.URL)
 			return err
 		}
-		// TODO(jeremy): Ideally if the PR is merged immediately we should keep going with the sync. Since
-		// there could be new changes to sync. On the other hand if it was enqueued then we should return because
-		// we want to wait for it to merge.
-		return nil
+
+		if state != github.ClosedState && state != github.MergedState {
+			log.Info("PR hasn't been merged; unable to continue with the sync", "number", existingPR.Number, "pr", existingPR.URL, "state", state)
+			return errors.Errorf("Existing PR %v is blocking sync", existingPR.URL)
+		}
 	}
 
 	if err := s.cloneRepos(); err != nil {
@@ -552,9 +554,21 @@ func (s *Syncer) RunOnce(force bool) error {
 
 	// EnableAutoMerge or merge the PR automatically. If you don't want the PR to be automerged you should
 	// set up appropriate branch protections e.g. require approvers.
-	if err := s.repoHelper.MergePR(pr.Number); err != nil {
-		log.Error(err, "Failed to merge or enable automerge on pr", "number", pr.Number, "url", pr.URL)
+	// Wait up to 1 minute to try to merge the PR
+	// TODO(jeremy): This is mostly for dev takeover in the event we can't rely on automerge e.g. because
+	// we have a private repository for which we can't enable automerge. In this case we want to wait and
+	// retry the merge until its merged or we timeout. We may want to refactor this code so we can invoke the
+	// polling only in the case of being called with the takeover command.
+	// If the PR can't be merged does it make sense to report an error?  in the case of long running tests
+	// The syncer can return and the PR will be merged either 1) when syncer is rerun or 2) by auto merge if enabled
+	// The desired behavior is potentially different in the takeover and non takeover setting.
+	state, err := s.repoHelper.MergeAndWait(pr.Number, 1*time.Minute)
+	if err != nil {
+		log.Error(err, "Failed to merge pr", "number", pr.Number, "url", pr.URL)
 		return err
+	}
+	if state != github.MergedState && state != github.ClosedState {
+		return fmt.Errorf("Failed to merge pr; state: %v", state)
 	}
 
 	log.Info("Sync succeeded")

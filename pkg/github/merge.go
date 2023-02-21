@@ -20,7 +20,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// PRMergeState is different states the PR can be in. It aggregates information from multiple
+// fields in the GitHub API (e.g. pr.State and pr.MergeStateStatus and pr.IsInMergeQueue)
+type PRMergeState string
+
 const (
+	// MergeStateStatusBehind and other
+	// values correspond to enum values for the field pr.MergeStateStatus
+	// https://docs.github.com/en/graphql/reference/enums#mergestatestatus
 	MergeStateStatusBehind   = "BEHIND"
 	MergeStateStatusBlocked  = "BLOCKED"
 	MergeStateStatusClosed   = "CLOSED"
@@ -29,6 +36,12 @@ const (
 	MergeStateStatusHasHooks = "HAS_HOOKS"
 	MergeStateStatusMerged   = "MERGED"
 	MergeStateStatusUnstable = "UNSTABLE"
+
+	MergedState   PRMergeState = "MERGED"
+	EnqueuedState PRMergeState = "ENQUEUED"
+	ClosedState   PRMergeState = "CLOSED"
+	UnknownState  PRMergeState = "UNKNOWN"
+	BlockedState  PRMergeState = "BLOCKED"
 )
 
 // MergeOptions are the options used to construct a context.
@@ -70,26 +83,26 @@ func (m *prMerger) inMergeQueue() error {
 }
 
 // Merge the pull request.
-func (m *prMerger) merge() error {
+func (m *prMerger) merge() (PRMergeState, error) {
 	log := m.log
 	pr := m.pr
 
 	if pr.State == MergeStateStatusClosed {
 		log.Info("PR can't be merged it has been closed")
-		return errors.Errorf("Can't merge PR %v it has been closed", pr.URL)
+		return ClosedState, errors.Errorf("Can't merge PR %v it has been closed", pr.URL)
 	}
 	if pr.State == MergeStateStatusMerged {
 		log.Info("PR has already been merged")
-		return nil
+		return MergedState, nil
 	}
 	if err := m.inMergeQueue(); err != nil {
 		log.Info("PR is already in merge queue")
-		return nil
+		return EnqueuedState, nil
 	}
 
 	if reason, blocked := blockedReason(m.pr.MergeStateStatus); blocked {
 		log.Info("PR merging is blocked", "reason", reason)
-		return errors.Errorf("PR merging is blocked; MergeStateStatus: %v reason: %v", m.pr.MergeStateStatus, reason)
+		return BlockedState, errors.Errorf("PR merging is blocked; MergeStateStatus: %v reason: %v", m.pr.MergeStateStatus, reason)
 	}
 
 	payload := mergePayload{
@@ -119,16 +132,19 @@ func (m *prMerger) merge() error {
 
 	err := mergePullRequest(m.HttpClient, payload)
 	if err != nil {
-		return err
+		return UnknownState, err
 	}
 
+	var state PRMergeState
 	if payload.auto {
 		log.Info("Pull request was added to merge queue and will be automatically merged when all requirements are met")
+		state = EnqueuedState
 	} else {
 		log.Info("pull request was merged", "title", m.pr.Title)
+		state = MergedState
 	}
 
-	return nil
+	return state, nil
 }
 
 type addAcceptHeaderTransport struct {
@@ -169,17 +185,13 @@ func newPRMerger(client *http.Client, repo ghrepo.Interface, number int) (*prMer
 // client - http client to use to talk to github
 // repo - the repo that owns the PR
 // number - the PR number to merge
-func MergePR(client *http.Client, repo ghrepo.Interface, number int) error {
+func MergePR(client *http.Client, repo ghrepo.Interface, number int) (PRMergeState, error) {
 	m, err := newPRMerger(client, repo, number)
 
 	if err != nil {
-		return err
+		return UnknownState, err
 	}
-	if err := m.merge(); err != nil {
-		return err
-	}
-
-	return err
+	return m.merge()
 }
 
 // blockedReason translates various MergeStateStatus GraphQL values into human-readable reason

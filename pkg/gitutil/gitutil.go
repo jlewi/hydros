@@ -50,7 +50,7 @@ func AddGitignoreToWorktree(wt *git.Worktree, repositoryPath string) error {
 		return nil
 	}
 	readFile, err := os.Open(path)
-	defer readFile.Close()
+	util.DeferIgnoreError(readFile.Close)
 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read .gitignore: %s", path)

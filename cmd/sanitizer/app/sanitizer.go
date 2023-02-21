@@ -177,7 +177,7 @@ func isUnsafeError(e error) bool {
 
 func (s *Sanitizer) cleanFile(path string, dest string) error {
 	s.log.Info("Cleaning target", "target", path)
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to clean file; %v", path)
 	}
