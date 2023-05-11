@@ -1,0 +1,41 @@
+openapi: 3.0.0
+info:
+  title: Workload Identity Generator
+  version: 1.0.0
+  description: A high level API for generating the resources needed to enable workload identity on a GKE cluster. The API takes care of creating the Kubernetes and Google service accounts and IAM bindings as needed.
+paths: {}
+components:
+  schemas:
+    WorkloadIdentity:
+      type: object
+      properties:
+        spec:
+          description: The spec provides the high level API for the workload resources.
+          type: object
+          properties:
+            requirement:
+              type: string
+              description: This should be a natural language description of what this WorkloadIdentity is doing; for example "Create a KSA foo bound to GSA dev@acme.com with cloud storage permissions"
+            ksa:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the kubernetes service account to bind to the Google service account
+                create:
+                  type: boolean
+                  description: Whether the kubernetes service account should be created if it doesn't exist
+            gsa:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the google service account to bind to the kubernetes service account
+                create:
+                  type: boolean
+                  description: Whether the google service account should be created if it doesn't exist
+                iamBindings:
+                  type: array
+                  description: A list of the GCP iam roles that should be assigned to the GSA if they aren't already. For a list of roles refer to https://cloud.google.com/iam/docs/understanding-roles
+                  items:
+                    type: string
