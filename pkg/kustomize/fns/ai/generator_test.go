@@ -6,7 +6,7 @@ import (
 	"github.com/PullRequestInc/go-gpt3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jlewi/hydros/api/v1alpha1"
-	"github.com/jlewi/hydros/pkg/ai/openai"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/ai/openai"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"os"
@@ -17,6 +17,9 @@ import (
 	"testing"
 	"time"
 )
+
+// N.B kustomize/ai_e2e_test.go provides an E2E test using the dispatcher.
+// Its not in this directory to avoid circular imports
 
 func Test_BuildPrompt(t *testing.T) {
 	currDir, err := os.Getwd()

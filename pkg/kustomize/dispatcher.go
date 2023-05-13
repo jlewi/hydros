@@ -2,6 +2,7 @@ package kustomize
 
 import (
 	"fmt"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/ai"
 	"os"
 	"path"
 	"path/filepath"
@@ -42,6 +43,7 @@ type Dispatcher struct {
 
 // dispatchTable maps configFunction Kinds to implementations
 var dispatchTable = map[string]func() kio.Filter{
+	ai.Kind:        ai.Filter,
 	configmap.Kind: configmap.Filter,
 	envs.Kind:      envs.Filter,
 	fields.Kind:    fields.Filter,

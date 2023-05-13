@@ -8,7 +8,7 @@ import (
 	"github.com/PullRequestInc/go-gpt3"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
-	"github.com/jlewi/hydros/pkg/ai/openai"
+	"github.com/jlewi/hydros/pkg/kustomize/fns/ai/openai"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -76,7 +76,7 @@ type GeneratorFn struct {
 type Spec struct {
 	// FilterSpecs is a list of strings providing the openapi specs of the functions that can be invoked.
 	// TODO(jeremy): Should we use a CRD here? That way we would know the kind etc...
-	FilterSpecs map[string]interface{} `json:"filterSpecs,omitempty" yaml:"filterSpecs,omitempty"`
+	FilterSpecs []map[string]interface{} `json:"filterSpecs,omitempty" yaml:"filterSpecs,omitempty"`
 }
 
 // TODO(jeremy): If we wrap the functions in CRD spec then we could potentially just load them from the directory
@@ -169,7 +169,24 @@ func (g *GeneratorFn) init() error {
 	}
 
 	g.client = gpt3.NewClient(string(apiKey), gpt3.WithTimeout(1*time.Minute))
-	return errors.New("Need to implement the logic to initialize the system prompt")
+
+	specs := make([]*yaml.RNode, 0, len(g.Spec.FilterSpecs))
+	for _, s := range g.Spec.FilterSpecs {
+		n, err := yaml.FromMap(s)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to marshal the spec")
+		}
+		specs = append(specs, n)
+	}
+
+	systemPrompt, err := buildPrompt(specs)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to build the system prompt from list of known APISpecs")
+	}
+	g.system = systemPrompt
+
+	g.completer = g.Complete
+	return nil
 }
 
 // Filter looks for any relevant annotations providing prompts and inflates them if necessary.
@@ -301,60 +318,60 @@ func (g *GeneratorFn) Complete(prompt string) ([]*yaml.RNode, string, error) {
 	return nodes, string(raw), nil
 }
 
-// Process handles all the resources in a directory.
-// TODO(jeremy): Can we get rid of this function?
-func (g *GeneratorFn) Process(dir string) error {
-	log := zapr.NewLogger(zap.L())
-	files, err := util.FindYamlFiles(dir)
-	if err != nil {
-		return errors.Wrapf(err, "Error finding YAML files in %v", dir)
-	}
-
-	// Build a map of the prompts that have already been generated.
-	prompts := make(map[string]bool)
-
-	// List of prompts and the associated files; node from which they came.
-	sources := make([]*PromptSource, 0, 10)
-
-	for _, file := range files {
-		nodes, err := util.ReadYaml(file)
-		if err != nil {
-			return errors.Wrapf(err, "Error reading YAML file %v", file)
-		}
-		for _, node := range nodes {
-			annotations := node.GetAnnotations()
-			if annotations == nil {
-				continue
-			}
-			for k, v := range annotations {
-				if strings.HasPrefix(k, OwnerPrefix) {
-					// The owner prefix annotation is used to contain information about which prompt generated
-					// this resource if any.
-					ref := &PromptRef{}
-					if err := json.Unmarshal([]byte(v), ref); err != nil {
-						log.Error(err, "Failed to unmarshal owner annotation", "key", k, "value", v)
-						continue
-					}
-
-					prompts[ref.Hash] = true
-				}
-				if strings.HasPrefix(k, AnnotationPrefix) {
-					p := &PromptSource{
-						Node:   node,
-						File:   file,
-						Prompt: v,
-						Key:    k,
-					}
-
-					sources = append(sources, p)
-				}
-
-			}
-		}
-	}
-
-	return nil
-}
+//// Process handles all the resources in a directory.
+//// TODO(jeremy): Can we get rid of this function?
+//func (g *GeneratorFn) Process(dir string) error {
+//	log := zapr.NewLogger(zap.L())
+//	files, err := util.FindYamlFiles(dir)
+//	if err != nil {
+//		return errors.Wrapf(err, "Error finding YAML files in %v", dir)
+//	}
+//
+//	// Build a map of the prompts that have already been generated.
+//	prompts := make(map[string]bool)
+//
+//	// List of prompts and the associated files; node from which they came.
+//	sources := make([]*PromptSource, 0, 10)
+//
+//	for _, file := range files {
+//		nodes, err := util.ReadYaml(file)
+//		if err != nil {
+//			return errors.Wrapf(err, "Error reading YAML file %v", file)
+//		}
+//		for _, node := range nodes {
+//			annotations := node.GetAnnotations()
+//			if annotations == nil {
+//				continue
+//			}
+//			for k, v := range annotations {
+//				if strings.HasPrefix(k, OwnerPrefix) {
+//					// The owner prefix annotation is used to contain information about which prompt generated
+//					// this resource if any.
+//					ref := &PromptRef{}
+//					if err := json.Unmarshal([]byte(v), ref); err != nil {
+//						log.Error(err, "Failed to unmarshal owner annotation", "key", k, "value", v)
+//						continue
+//					}
+//
+//					prompts[ref.Hash] = true
+//				}
+//				if strings.HasPrefix(k, AnnotationPrefix) {
+//					p := &PromptSource{
+//						Node:   node,
+//						File:   file,
+//						Prompt: v,
+//						Key:    k,
+//					}
+//
+//					sources = append(sources, p)
+//				}
+//
+//			}
+//		}
+//	}
+//
+//	return nil
+//}
 
 // Completer takes a prompt and returns YAML resource that contain the completion.
 // Response is an empty list if no completions could be generated.
