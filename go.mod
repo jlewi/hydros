@@ -50,6 +50,7 @@ require (
 	github.com/cli/go-gh v0.1.3-0.20221102170023-e3ec45fb1d1b
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/thanhpk/randstr v1.0.4
+	github.com/yuin/goldmark v1.4.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	google.golang.org/grpc v1.50.1
 )

@@ -55,14 +55,14 @@ type TestObject struct {
 }
 
 // CopyCompleter implements the Completer interface in a manner suitable for testing
-func CopyCompleter(prompt string) ([]*yaml.RNode, error) {
+func CopyCompleter(prompt string) ([]*yaml.RNode, string, error) {
 	o := TestObject{
 		GeneratedFrom: prompt,
 	}
 
 	data, err := yaml.Marshal(o)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to marshal object")
+		return nil, "", errors.Wrapf(err, "Failed to marshal object")
 	}
 	input := bytes.NewReader(data)
 	reader := kio.ByteReader{
@@ -71,7 +71,8 @@ func CopyCompleter(prompt string) ([]*yaml.RNode, error) {
 		OmitReaderAnnotations: true,
 	}
 
-	return reader.Read()
+	nodes, err := reader.Read()
+	return nodes, "", err
 }
 
 func TestGeneratorFn_Filter(t *testing.T) {

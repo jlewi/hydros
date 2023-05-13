@@ -1,10 +1,14 @@
 package ai
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/PullRequestInc/go-gpt3"
 	"github.com/go-logr/zapr"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/ai/openai"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -15,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const (
@@ -48,10 +53,34 @@ func Filter() kio.Filter {
 
 // GeneratorFn handles extracting annotations from Kubernetes resources and generating configuration.
 type GeneratorFn struct {
+	// Kind is the API name.  Must be PodEnvs.
+	Kind string `yaml:"kind"`
+
+	// APIVersion is the API version.  Must be examples.kpt.dev/v1alpha1
+	APIVersion string `yaml:"apiVersion"`
+
+	// Metadata defines instance metadata.
+	Metadata v1alpha1.Metadata `yaml:"metadata"`
+
+	// Spec defines the desired declarative configuration.
+	Spec Spec `yaml:"spec"`
+
 	// completer to use
 	completer Completer
+	client    gpt3.Client
+	// system is the system prompt to use
+	system string
 }
 
+// Spec is the spec for the GeneratorFn function.
+type Spec struct {
+	// FilterSpecs is a list of strings providing the openapi specs of the functions that can be invoked.
+	// TODO(jeremy): Should we use a CRD here? That way we would know the kind etc...
+	FilterSpecs map[string]interface{} `json:"filterSpecs,omitempty" yaml:"filterSpecs,omitempty"`
+}
+
+// TODO(jeremy): If we wrap the functions in CRD spec then we could potentially just load them from the directory
+// like we do with KPT functions
 func buildPromptFromDirs(dirs []string) (string, error) {
 	log := zapr.NewLogger(zap.L())
 	specs := make([]*yaml.RNode, 0, 10)
@@ -133,9 +162,23 @@ func hashPrompt(prompt string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
+func (g *GeneratorFn) init() error {
+	apiKey := openai.GetAPIKey()
+	if apiKey == "" {
+		return errors.New("No OpenAI API key specified. Set the environment variable OPENAI_API_KEY.")
+	}
+
+	g.client = gpt3.NewClient(string(apiKey), gpt3.WithTimeout(1*time.Minute))
+	return errors.New("Need to implement the logic to initialize the system prompt")
+}
+
 // Filter looks for any relevant annotations providing prompts and inflates them if necessary.
 func (g *GeneratorFn) Filter(in []*yaml.RNode) ([]*yaml.RNode, error) {
 	log := zapr.NewLogger(zap.L())
+
+	if err := g.init(); err != nil {
+		return in, errors.Wrapf(err, "Failed to initialize GeneratorFn")
+	}
 
 	// Build a map of the prompts that have already been generated.
 	prompts := make(map[string]bool)
@@ -187,7 +230,7 @@ func (g *GeneratorFn) Filter(in []*yaml.RNode) ([]*yaml.RNode, error) {
 		}
 
 		log.Info("Processing prompt", "prompt", p.Prompt, "file", p.File, "key", p.Key)
-		resp, err := g.completer(p.Prompt)
+		resp, extra, err := g.completer(p.Prompt)
 		if err != nil {
 			log.Error(err, "Failed to complete prompt", "prompt", p.Prompt, "file", p.File, "key", p.Key)
 			failures.AddCause(errors.Wrapf(err, "Failed to complete prompt %v", p.Prompt))
@@ -197,7 +240,7 @@ func (g *GeneratorFn) Filter(in []*yaml.RNode) ([]*yaml.RNode, error) {
 		ref := PromptRef{
 			Hash:     hash,
 			Prompt:   p.Prompt,
-			Response: "",
+			Response: extra,
 		}
 
 		b, err := json.Marshal(ref)
@@ -225,7 +268,41 @@ func (g *GeneratorFn) Filter(in []*yaml.RNode) ([]*yaml.RNode, error) {
 	return out, nil
 }
 
+func (g *GeneratorFn) Complete(prompt string) ([]*yaml.RNode, string, error) {
+	log := zapr.NewLogger(zap.L())
+	req := gpt3.ChatCompletionRequest{
+		Model: "gpt-3.5-turbo",
+		Messages: []gpt3.ChatCompletionRequestMessage{
+			{
+				Role:    "system",
+				Content: g.system,
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+	}
+
+	resp, err := g.client.ChatCompletion(context.Background(), req)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "Failed to complete prompt %v", prompt)
+	}
+	if len(resp.Choices) > 1 {
+		log.Info("Warning multiple choices returned only the first one is being used", "prompt", prompt, "choices", resp.Choices)
+	}
+
+	nodes, err := MarkdownToYAML(resp.Choices[0].Message.Content)
+
+	raw, err := json.Marshal(resp)
+	if err != nil {
+		return nodes, "", errors.Wrapf(err, "Failed to marshal response %v", resp)
+	}
+	return nodes, string(raw), nil
+}
+
 // Process handles all the resources in a directory.
+// TODO(jeremy): Can we get rid of this function?
 func (g *GeneratorFn) Process(dir string) error {
 	log := zapr.NewLogger(zap.L())
 	files, err := util.FindYamlFiles(dir)
@@ -281,4 +358,5 @@ func (g *GeneratorFn) Process(dir string) error {
 
 // Completer takes a prompt and returns YAML resource that contain the completion.
 // Response is an empty list if no completions could be generated.
-type Completer func(prompt string) ([]*yaml.RNode, error)
+// The string is an extra metadata that should logged with the completion
+type Completer func(prompt string) ([]*yaml.RNode, string, error)
