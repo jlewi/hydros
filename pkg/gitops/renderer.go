@@ -2,6 +2,7 @@ package gitops
 
 import (
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/github"
@@ -12,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -122,6 +124,16 @@ func (r *Renderer) Run() error {
 		return err
 	}
 
+	syncNeeded, err := r.syncNeeded()
+	if err != nil {
+		return err
+	}
+
+	if !syncNeeded {
+		log.Info("No sync needed")
+		return nil
+	}
+
 	if err := r.applyKRMFns(); err != nil {
 		return err
 	}
@@ -194,6 +206,38 @@ func (r *Renderer) applyKRMFns() error {
 
 	// apply all filtered function on their respective dirs
 	return d.ApplyFilteredFuncs(funcs.Nodes)
+}
+
+// syncNeeded checks if a sync is needed. Since we are checking changes into the source repository we need to
+// avoid recursively triggering a sync; i.e. if the last change was made by hydros AI don't run
+func (r *Renderer) syncNeeded() (bool, error) {
+	log := zapr.NewLogger(zap.L())
+	// Open the repository
+	gitRepo, err := git.PlainOpenWithOptions(r.cloneDir(), &git.PlainOpenOptions{})
+	if err != nil {
+		return false, errors.Wrapf(err, "Could not open respoistory at %v; ensure the directory contains a git repo", r.cloneDir())
+	}
+
+	// Get the current commit
+	ref, err := gitRepo.Head()
+	if err != nil {
+		return false, err
+	}
+
+	commit, err := gitRepo.CommitObject(ref.Hash())
+	if err != nil {
+		return false, err
+	}
+
+	// N.B. This is a bit of a hack but couldn't figure out a better way. The email and name don't appear
+	// to be what is set in the git config.  I think it depends on the values set in the GitHub app.
+	if strings.HasPrefix(commit.Author.Name, "hydros") {
+		log.Info("Last commit was made by hydros AI; skipping sync", "name", commit.Author.Name, "email", "else", commit.Author.Email, "commit", commit.Hash.String())
+		return false, nil
+	} else {
+		log.Info("Last commit was not made by hydros AI; sync needed", "name", commit.Author.Name, "email", "else", commit.Author.Email, "commit", commit.Hash.String())
+	}
+	return true, nil
 }
 
 //func (r *Renderer) checkout() error {

@@ -265,6 +265,11 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) (*api.PullReque
 	return pr, err
 }
 
+// Email returns the value of email used by this repohelper.
+func (h *RepoHelper) Email() string {
+	return h.email
+}
+
 // PullRequestForBranch returns the PR for the given branch if it exists and nil if no PR exists.
 // TODO(jeremy): Can we change this to api.PullRequest?
 func (h *RepoHelper) PullRequestForBranch() (*PullRequest, error) {
