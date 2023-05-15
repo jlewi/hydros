@@ -177,6 +177,7 @@ func init() {
 	rootCmd.AddCommand(newVersionCmd(os.Stdout))
 	rootCmd.AddCommand(githubCmds.NewAppTokenCmd(os.Stdout, &gOptions.level, &gOptions.devLogger))
 	rootCmd.AddCommand(commands.NewTakeOverCmd())
+	rootCmd.AddCommand(commands.NewGenerateCmd())
 
 	rootCmd.PersistentFlags().BoolVar(&gOptions.devLogger, "dev-logger", false, "If true configure the logger for development; i.e. non-json output")
 	rootCmd.PersistentFlags().StringVarP(&gOptions.level, "log-level", "", "info", "Log level: error info or debug")

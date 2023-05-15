@@ -45,11 +45,12 @@ require (
 require (
 	cloud.google.com/go/secretmanager v1.9.0
 	github.com/PrimerAI/go-micro-utils-public/gmu v0.0.0-20220526222947-c3eb3c2c79c8
-	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/PullRequestInc/go-gpt3 v1.1.15
 	github.com/cli/cli/v2 v2.20.2
 	github.com/cli/go-gh v0.1.3-0.20221102170023-e3ec45fb1d1b
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/thanhpk/randstr v1.0.4
+	github.com/yuin/goldmark v1.4.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	google.golang.org/grpc v1.50.1
 )

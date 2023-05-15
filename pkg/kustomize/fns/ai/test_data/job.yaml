@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trainer
+  annotations:
+    ai.hydros.io/1: “Attach the GCP service account trainer with GCS and BigQuery edit permissions. Create the service account if it doesn’t exist”
+spec:
+  template:
+    spec:
+      containers:
+        - name: tensorflow
+          image: tensorflow
+          command: ["train.py"]
