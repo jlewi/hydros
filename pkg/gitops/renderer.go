@@ -1,6 +1,7 @@
 package gitops
 
 import (
+	"fmt"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/github"
@@ -124,9 +125,32 @@ func (r *Renderer) Run() error {
 	if err := r.applyKRMFns(); err != nil {
 		return err
 	}
-	//if err := r.checkout(); err != nil {
-	//	return err
-	//}
+
+	message := "Hydros AI generating configurations"
+	if err := r.repoHelper.CommitAndPush(message, false); err != nil {
+		return err
+	}
+	pr, err := r.repoHelper.CreatePr(message, []string{})
+	if err != nil {
+		return err
+	}
+
+	log.Info("PR created", "pr", pr.URL, "number", pr.Number)
+	// EnableAutoMerge or merge the PR automatically. If you don't want the PR to be automerged you should
+	// set up appropriate branch protections e.g. require approvers.
+	// Wait up to 1 minute to try to merge the PR
+	// If the PR can't be merged does it make sense to report an error?  in the case of long running tests
+	// The syncer can return and the PR will be merged either 1) when syncer is rerun or 2) by auto merge if enabled
+	// The desired behavior is potentially different in the takeover and non takeover setting.
+	state, err := r.repoHelper.MergeAndWait(pr.Number, 1*time.Minute)
+	if err != nil {
+		log.Error(err, "Failed to merge pr", "number", pr.Number, "url", pr.URL)
+		return err
+	}
+	if state != github.MergedState && state != github.ClosedState {
+		return fmt.Errorf("Failed to merge pr; state: %v", state)
+	}
+
 	return nil
 }
 
