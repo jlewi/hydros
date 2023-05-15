@@ -5,6 +5,7 @@ import (
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/github/ghrepo"
+	hkustomize "github.com/jlewi/hydros/pkg/kustomize"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -15,6 +16,12 @@ import (
 
 // Renderer handles in place modification of YAML files.
 // It is intended to run a bunch of KRM functions in place and then check the modifications back into the repository
+//
+// TODO(jeremy): I don't think the semantics for specifying the KRM functions to apply is quite right.
+// Right now we apply all KRM functions found at sourcePath. These functions get applied to all YAML below the
+// location of the function path. This is ok as long as we don't have a mix of KRM functions that should be applied
+// when hydrating into a different repository (e.g. via Syncer) but not when changes are to be checked into the
+// source repository.
 type Renderer struct {
 	// ForkRepo is the repo into which the changes will be pushed and the PR created from
 	ForkRepo *v1alpha1.GitHubRepo `yaml:"forkRepo,omitempty"`
@@ -29,6 +36,8 @@ type Renderer struct {
 	repoHelper *github.RepoHelper
 	transports *github.TransportManager
 
+	// sourcePath is the path relative to the root of the repo where the KRM functions should be applied.
+	sourcePath string
 	// commit is the commit to checkout
 	commit string
 }
@@ -111,6 +120,10 @@ func (r *Renderer) Run() error {
 	if err := r.repoHelper.PrepareBranch(true); err != nil {
 		return err
 	}
+
+	if err := r.applyKRMFns(); err != nil {
+		return err
+	}
 	//if err := r.checkout(); err != nil {
 	//	return err
 	//}
@@ -119,6 +132,44 @@ func (r *Renderer) Run() error {
 
 func (r *Renderer) cloneDir() string {
 	return filepath.Join(r.workDir, "source")
+}
+
+// applyKRMFns applies the KRM functions to the source repo.
+func (r *Renderer) applyKRMFns() error {
+	log := zapr.NewLogger(zap.L())
+
+	d := hkustomize.Dispatcher{
+		Log: log,
+	}
+
+	sourceDir := filepath.Join(r.cloneDir(), r.sourcePath)
+	// get all functions based on the source directory
+	funcs, err := d.GetAllFuncs([]string{sourceDir})
+	if err != nil {
+		log.Error(err, "hit unexpected error while trying to parse all functions")
+		return err
+	}
+
+	// sort functions by longest path first
+	err = d.SortFns(funcs)
+	if err != nil {
+		return err
+	}
+
+	// set respective annotation paths for each function
+	err = d.SetFuncPaths(funcs, sourceDir, sourceDir, map[hkustomize.TargetPath]bool{})
+	if err != nil {
+		return err
+	}
+
+	// run function specified by function path, on hydrated source directory
+	err = d.RunOnDir(sourceDir, []string{})
+	if err != nil {
+		return err
+	}
+
+	// apply all filtered function on their respective dirs
+	return d.ApplyFilteredFuncs(funcs.Nodes)
 }
 
 //func (r *Renderer) checkout() error {

@@ -6,6 +6,7 @@ import (
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/hydros"
+	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"io"
@@ -33,6 +34,7 @@ func Test_RendererManualE2E(t *testing.T) {
 	}
 
 	err := func() error {
+		util.SetupLogger("info", true)
 		log := zapr.NewLogger(zap.L())
 		secretURI := "gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest"
 		secret, err := readSecret(secretURI)
@@ -54,14 +56,15 @@ func Test_RendererManualE2E(t *testing.T) {
 			ForkRepo: &v1alpha1.GitHubRepo{
 				Org:    "jlewi",
 				Repo:   "hydros",
-				Branch: "jlewi/ai",
+				Branch: "jlewi/ai-test",
 			},
 			DestRepo: &v1alpha1.GitHubRepo{
 				Org:    "jlewi",
 				Repo:   "hydros",
-				Branch: "main",
+				Branch: "jlewi/ai",
 			},
 			workDir:    "/tmp/test_renderer",
+			sourcePath: "tests/manifests",
 			repoHelper: nil,
 			transports: manager,
 			commit:     "",
