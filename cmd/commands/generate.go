@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/kustomize"
 	"github.com/spf13/cobra"
@@ -26,8 +27,6 @@ func NewGenerateCmd() *cobra.Command {
 		},
 	}
 
-	//cmd.Flags().StringVarP(&functionPath, "config", "-c", "", "The path to the YAML file containing the HydrosAI configuration file with the list of known KRM functions.")
-	//cmd.MarkFlagRequired("config")
 	return cmd
 }
 

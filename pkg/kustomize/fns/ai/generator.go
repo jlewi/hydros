@@ -319,61 +319,6 @@ func (g *GeneratorFn) Complete(prompt string) ([]*yaml.RNode, string, error) {
 	return nodes, string(raw), nil
 }
 
-//// Process handles all the resources in a directory.
-//// TODO(jeremy): Can we get rid of this function?
-//func (g *GeneratorFn) Process(dir string) error {
-//	log := zapr.NewLogger(zap.L())
-//	files, err := util.FindYamlFiles(dir)
-//	if err != nil {
-//		return errors.Wrapf(err, "Error finding YAML files in %v", dir)
-//	}
-//
-//	// Build a map of the prompts that have already been generated.
-//	prompts := make(map[string]bool)
-//
-//	// List of prompts and the associated files; node from which they came.
-//	sources := make([]*PromptSource, 0, 10)
-//
-//	for _, file := range files {
-//		nodes, err := util.ReadYaml(file)
-//		if err != nil {
-//			return errors.Wrapf(err, "Error reading YAML file %v", file)
-//		}
-//		for _, node := range nodes {
-//			annotations := node.GetAnnotations()
-//			if annotations == nil {
-//				continue
-//			}
-//			for k, v := range annotations {
-//				if strings.HasPrefix(k, OwnerPrefix) {
-//					// The owner prefix annotation is used to contain information about which prompt generated
-//					// this resource if any.
-//					ref := &PromptRef{}
-//					if err := json.Unmarshal([]byte(v), ref); err != nil {
-//						log.Error(err, "Failed to unmarshal owner annotation", "key", k, "value", v)
-//						continue
-//					}
-//
-//					prompts[ref.Hash] = true
-//				}
-//				if strings.HasPrefix(k, AnnotationPrefix) {
-//					p := &PromptSource{
-//						Node:   node,
-//						File:   file,
-//						Prompt: v,
-//						Key:    k,
-//					}
-//
-//					sources = append(sources, p)
-//				}
-//
-//			}
-//		}
-//	}
-//
-//	return nil
-//}
-
 // Completer takes a prompt and returns YAML resource that contain the completion.
 // Response is an empty list if no completions could be generated.
 // The string is an extra metadata that should logged with the completion
