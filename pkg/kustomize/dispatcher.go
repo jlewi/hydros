@@ -270,7 +270,14 @@ func (d *Dispatcher) constructTargetPath(sourceRoot string, pathAnnotation strin
 }
 
 // SetFuncPaths function adds 2 annotations; sourcefunctionpath that will be the source of where the functionpath lies;
-// targetdir is the target directory we need to apply the function too
+// targetdir is the target directory we need to apply the function too.
+// This allows functions to be stored in a different directory than the target directory and just applying the
+// functions to the files below that directory.
+// leafPaths should be set if you are using Syncer and running kustomize build and then applying KPT functions to
+// the kustomize build output. The convention in hydros is to treat the final directory as an overlay and strip
+// that directory from the target name.
+//
+// However, when applying KRM functions in place you can set leafPaths to nil
 func (d *Dispatcher) SetFuncPaths(buff kio.PackageBuffer, hydratedPath string, sourceRoot string, leafPaths map[TargetPath]bool) error {
 	for _, filteredFunc := range buff.Nodes {
 
@@ -286,15 +293,20 @@ func (d *Dispatcher) SetFuncPaths(buff kio.PackageBuffer, hydratedPath string, s
 			pathAnnotation = annotations[kioutil.LegacyPathAnnotation]
 		}
 
-		targetDir, err := d.constructTargetPath(sourceRoot, pathAnnotation, leafPaths, hydratedPath)
-		if err != nil {
-			return err
+		var targetDir string
+		if len(leafPaths) > 0 {
+			var err error
+			targetDir, err = d.constructTargetPath(sourceRoot, pathAnnotation, leafPaths, hydratedPath)
+			if err != nil {
+				return err
+			}
+		} else {
+			targetDir = filepath.Join(hydratedPath, filepath.Dir(pathAnnotation))
 		}
 
 		annotations[SourceFunctionPath] = filepath.Dir(filepath.Join(sourceRoot, pathAnnotation))
 		annotations[FunctionTargetDir] = targetDir
-		err = filteredFunc.SetAnnotations(annotations)
-		if err != nil {
+		if err := filteredFunc.SetAnnotations(annotations); err != nil {
 			return err
 		}
 	}
