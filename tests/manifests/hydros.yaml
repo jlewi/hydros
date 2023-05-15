@@ -4,22 +4,22 @@ kind: ManifestSync
 metadata:
   name: hydros-ai-inplace
 spec:
-  sourceRepo:
-    org: jlewi
-    repo: hydros
-    # TODO(jeremy): This should probably be whatever branch you are testing on.
-    branch: jlewi/ai
-  forkRepo:
-    org: jlewi
-    repo: hydros
-    branch: hydros/hydros-ai-inplace
-  destRepo:
-    org: jlewi
-    repo: hydros
-    branch: main
-  sourcePath: /tests/manifests
   selector:
     matchLabels:
       app: hydros
       test: ai
   destPath: /tests/manifests
+  destRepo:
+    branch: main
+    org: jlewi
+    repo: hydros
+  forkRepo:
+    branch: hydros/hydros-ai-inplace
+    org: jlewi
+    repo: hydros
+  sourcePath: /tests/manifests
+  sourceRepo:
+    # TODO(jeremy): This should probably be whatever branch you are testing on.
+    branch: jlewi/ai
+    org: jlewi
+    repo: hydros

@@ -1,0 +1,17 @@
+apiVersion: components.github.com/v1alpha1
+kind: WorkloadIdentity
+metadata:
+  name: trainer-workload-identity
+  annotations:
+    owner.hydros.io/: "{\"hash\":\"f5faf45dba60ad4c4a91f2b3a6e592e59837d858d2f5f5ff7f9bb794290ad47c\",\"prompt\":\"“Attach the GCP service account trainer with GCS and BigQuery edit permissions. Create the service account if it doesn’t exist”\",\"response\":\"{\\\"id\\\":\\\"chatcmpl-7GaeAXbWa6l6mIbZaLaAvI6HSVuGf\\\",\\\"object\\\":\\\"chat.completion\\\",\\\"created\\\":1684188474,\\\"model\\\":\\\"gpt-3.5-turbo-0301\\\",\\\"choices\\\":[{\\\"index\\\":0,\\\"finish_reason\\\":\\\"stop\\\",\\\"message\\\":{\\\"role\\\":\\\"assistant\\\",\\\"content\\\":\\\"Here is the YAML definition that would attach the GCP service account \\\\\\\"trainer\\\\\\\" with GCS and BigQuery edit permissions. It will create the service account if it doesn't exist:\\\\n\\\\n```yaml\\\\napiVersion: components.github.com/v1alpha1\\\\nkind: WorkloadIdentity\\\\nmetadata:\\\\n  name: trainer-workload-identity\\\\nspec:\\\\n  gsa:\\\\n    create: true\\\\n    name: trainer@my-project-id.iam.gserviceaccount.com\\\\n    iamBindings:\\\\n      - roles/editor\\\\n      - roles/bigquery.dataEditor\\\\n  ksa:\\\\n    create: false\\\\n    name: trainer\\\\n  requirement: \\\\\\\"Attach the GCP service account trainer with GCS and BigQuery edit permissions. Create the service account if it doesn't exist\\\\\\\"\\\\n```\\\\n\\\\nPlease replace \\\\\\\"my-project-id\\\\\\\" with your GCP project ID. Also, make sure to apply this YAML to your Kubernetes cluster using `kubectl apply -f \\\\u003cfilename\\\\u003e.yaml`.\\\"}}],\\\"usage\\\":{\\\"prompt_tokens\\\":465,\\\"completion_tokens\\\":194,\\\"total_tokens\\\":659}}\"}"
+spec:
+  gsa:
+    name: trainer@my-project-id.iam.gserviceaccount.com
+    create: true
+    iamBindings:
+    - roles/editor
+    - roles/bigquery.dataEditor
+  ksa:
+    name: trainer
+    create: false
+  requirement: "Attach the GCP service account trainer with GCS and BigQuery edit permissions. Create the service account if it doesn't exist"
