@@ -17,6 +17,8 @@ import (
 )
 
 // MarkdownToYAML looks for an codeblocks in a markdown string containing YAML and converts them to YAML nodes.
+// If there is a code block containing invalid YAML it is logged but MarkdownToYAML keeps going and returns nil
+// error
 func MarkdownToYAML(input string) ([]*yaml.RNode, error) {
 	log := zapr.NewLogger(zap.L())
 	// N.B. I have no idea what these options are; I just copied

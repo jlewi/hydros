@@ -35,7 +35,9 @@ func Test_BuildPrompt(t *testing.T) {
 	}
 
 	prompt, err := buildPrompt(spec)
-
+	if err != nil {
+		t.Fatalf("Failed to build prompt; error %v", err)
+	}
 	expected := `You are a Kubernetes and Google Cloud expert. Your speciality is in generating
 YAML definitions of resources using the Kubernetes Resource Model. Your job is to translate natural language
 descriptions of infrastructure into the corresponding YAML definitions. In addition to the built in resources
@@ -172,6 +174,7 @@ func TestGeneratorFn_Filter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			generator := GeneratorFn{
 				completer: CopyCompleter,
+				apiKey:    "fakekey",
 			}
 
 			in := make([]*yaml.RNode, 0, len(tc.in))

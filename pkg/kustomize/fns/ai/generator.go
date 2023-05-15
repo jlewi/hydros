@@ -71,9 +71,13 @@ type GeneratorFn struct {
 	client    gpt3.Client
 	// system is the system prompt to use
 	system string
+
+	apiKey string
 }
 
 // Spec is the spec for the GeneratorFn function.
+//
+// TODO(jeremy): Should we allow the OpenAI API key to be specified as a secret reference(e.g. GCP)?
 type Spec struct {
 	// FilterSpecs is a list of strings providing the openapi specs of the functions that can be invoked.
 	// TODO(jeremy): Should we use a CRD here? That way we would know the kind etc...
@@ -164,12 +168,15 @@ func hashPrompt(prompt string) string {
 }
 
 func (g *GeneratorFn) init() error {
-	apiKey := openai.GetAPIKey()
-	if apiKey == "" {
+	if g.apiKey == "" {
+		g.apiKey = openai.GetAPIKey()
+	}
+
+	if g.apiKey == "" {
 		return errors.New("No OpenAI API key specified. Set the environment variable OPENAI_API_KEY.")
 	}
 
-	g.client = gpt3.NewClient(string(apiKey), gpt3.WithTimeout(1*time.Minute))
+	g.client = gpt3.NewClient(string(g.apiKey), gpt3.WithTimeout(1*time.Minute))
 
 	specs := make([]*yaml.RNode, 0, len(g.Spec.FilterSpecs))
 	for _, s := range g.Spec.FilterSpecs {
@@ -186,7 +193,9 @@ func (g *GeneratorFn) init() error {
 	}
 	g.system = systemPrompt
 
-	g.completer = g.Complete
+	if g.completer == nil {
+		g.completer = g.Complete
+	}
 	return nil
 }
 
@@ -283,6 +292,9 @@ func (g *GeneratorFn) Filter(in []*yaml.RNode) ([]*yaml.RNode, error) {
 		out = append(out, resp...)
 	}
 
+	if len(failures.Causes) > 0 {
+		return out, failures
+	}
 	return out, nil
 }
 
@@ -311,7 +323,9 @@ func (g *GeneratorFn) Complete(prompt string) ([]*yaml.RNode, string, error) {
 	}
 
 	nodes, err := MarkdownToYAML(resp.Choices[0].Message.Content)
-
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "Failed to convert markdown to yaml %v", resp.Choices[0].Message.Content)
+	}
 	raw, err := json.Marshal(resp)
 	if err != nil {
 		return nodes, "", errors.Wrapf(err, "Failed to marshal response %v", resp)
