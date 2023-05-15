@@ -2,6 +2,8 @@ package ai
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/zapr"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -10,7 +12,6 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"go.uber.org/zap"
-	"strings"
 
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )

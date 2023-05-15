@@ -2,13 +2,14 @@ package kustomize
 
 import (
 	"fmt"
-	"github.com/jlewi/hydros/pkg/kustomize/fns/ai"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/jlewi/hydros/pkg/kustomize/fns/ai"
 
 	"github.com/jlewi/hydros/pkg/kustomize/fns/patches"
 

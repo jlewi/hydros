@@ -1,11 +1,12 @@
 package kustomize
 
 import (
-	"github.com/jlewi/hydros/pkg/util"
-	"github.com/otiai10/copy"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/jlewi/hydros/pkg/util"
+	"github.com/otiai10/copy"
 )
 
 func Test_AIGeneratorE2E(t *testing.T) {

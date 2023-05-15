@@ -5,6 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"text/template"
+	"time"
+
 	"github.com/PullRequestInc/go-gpt3"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -12,14 +18,9 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"path/filepath"
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
-	"strconv"
-	"strings"
-	"text/template"
-	"time"
 )
 
 const (
