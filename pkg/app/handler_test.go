@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"github.com/google/go-github/v52/github"
 	"github.com/gregjones/httpcache"
+	hGithub "github.com/jlewi/hydros/pkg/github"
+	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/hydros"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
@@ -19,7 +21,7 @@ func Test_HookManual(t *testing.T) {
 		t.Skip("Skipping test because we are running in GitHub Actions and this is a manual test")
 	}
 
-	util.SetupLogger("debug", true)
+	log := util.SetupLogger("debug", true)
 
 	fullName := "jlewi/hydros-hydrated"
 
@@ -62,8 +64,26 @@ func Test_HookManual(t *testing.T) {
 		//),
 	)
 
+	secretURI := "gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest"
+	secret, err := readSecret(secretURI)
+	if err != nil {
+		t.Fatalf("Could not read file: %v; error: %+v", secretURI, err)
+	}
+	transports, err := hGithub.NewTransportManager(int64(hydros.HydrosGitHubAppID), secret, log)
+	if err != nil {
+		t.Errorf("Failed to create transport manager; error %v", err)
+	}
+
+	manager, err := gitops.NewManager([]gitops.Reconciler{})
+	if err != nil {
+		t.Fatalf("Failed to create manager; error %v", err)
+	}
+
 	handler := &HydrosHandler{
 		ClientCreator: cc,
+		workDir:       "/tmp/hydros_handler_test",
+		transports:    transports,
+		Manager:       manager,
 	}
 
 	if err := handler.Handle(context.Background(), "push", "1234", payload); err != nil {

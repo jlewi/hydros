@@ -4,17 +4,28 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
+	"github.com/jlewi/hydros/api/v1alpha1"
+	hGithub "github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/github/ghrepo"
+	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"path/filepath"
 )
 
 type HydrosHandler struct {
 	githubapp.ClientCreator
+	Manager *gitops.Manager
+	// TODO(jeremy): ClientCreator and TransportManager are somewhat redundant
+	transports *hGithub.TransportManager
+
+	workDir string
 }
 
 func (h *HydrosHandler) Handles() []string {
@@ -118,6 +129,49 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 
 		log.Info("Created check", "check", check, "response", response)
 		return nil
+	}
+
+	// Determine the name for the reconciler
+	// It should be unique for each repo and also particular type of reconciler.
+	rName := fmt.Sprintf("hydros-renderer-%s-%s", repoName.RepoOwner(), repoName.RepoName())
+
+	// Enqueue a sync event.
+	if !h.Manager.HasReconciler(rName) {
+
+		if ghrepo.FullName(repoName) != "jlewi/hydros-hydrated" {
+			return errors.Errorf("Currently only the repository jlewi/hydros-hydrated. Code needs to be updated to support other repositories")
+		}
+		log.Info("Creating reconciler", "name", rName)
+
+		// TODO(jeremy): This information should come from the configuration checked into the repository.
+		// e.g.from the file .github/hydros.yaml
+
+		fork := &v1alpha1.GitHubRepo{
+			Org:    "jlewi",
+			Repo:   "hydros-hydrated",
+			Branch: "hydros/reconcile",
+		}
+		dest := &v1alpha1.GitHubRepo{
+			Org:    "jlewi",
+			Repo:   "hydros-hydrated",
+			Branch: "main",
+		}
+		// Make sure workdir is unique for each reconciler.
+		workDir := filepath.Join(h.workDir, rName)
+
+		sourcePath := "tests/manifests"
+
+		r, err := gitops.NewRenderer(fork, dest, workDir, sourcePath, h.transports)
+		if err != nil {
+			return err
+		}
+
+		if err := h.Manager.AddReconciler(r); err != nil {
+			if !gitops.IsDuplicateReconciler(err) {
+				return err
+			}
+			log.Info("Ignoring AddReconciler DuplicateReconciler error; assuming its a race condition caused by simultaneous webhooks", "name", rName)
+		}
 	}
 	//ref := event.GetRef()
 
