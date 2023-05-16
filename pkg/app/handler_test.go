@@ -28,8 +28,8 @@ func Test_HookManual(t *testing.T) {
 	// N.B. values for the push event were obtained by looking at the webhook sent in the GitHub UI
 	// https://github.com/settings/apps/hydros-bot/advanced
 	event := &github.PushEvent{
-		After: proto.String("2422841179bc6928be43f9d0108632c673c87364"),
-		Ref:   proto.String("refs/heads/jlewi"),
+		After: proto.String("2eb10e013c13dec8639683195bbdaa411b1413bc"),
+		Ref:   proto.String("refs/heads/main"),
 		Repo: &github.PushEventRepository{
 			FullName: &fullName,
 			Owner: &github.User{
@@ -79,6 +79,10 @@ func Test_HookManual(t *testing.T) {
 		t.Fatalf("Failed to create manager; error %v", err)
 	}
 
+	if err := manager.Start(1, 1*time.Hour); err != nil {
+		t.Fatalf("Failed to start manager; error %v", err)
+	}
+
 	handler := &HydrosHandler{
 		ClientCreator: cc,
 		workDir:       "/tmp/hydros_handler_test",
@@ -89,8 +93,9 @@ func Test_HookManual(t *testing.T) {
 	if err := handler.Handle(context.Background(), "push", "1234", payload); err != nil {
 		t.Fatalf("Failed to handle the push")
 	}
-	//
-	//if waitTimeout(&s.wg, time.Minute) {
-	//	t.Fatalf("Timeout waiting for syncer's process to be called twice")
-	//}
+
+	//time.Sleep(10 * time.Minute)
+	// Wait for it to finish processing.
+	manager.Shutdown()
+
 }
