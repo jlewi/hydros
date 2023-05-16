@@ -18,13 +18,16 @@ import (
 type Reconciler interface {
 	// Name is a unique name for the reconciler
 	Name() string
-	// Run runs the reconcile loop
+	// Run runs the reconcile loop. event can provide additional information about the event specific to
+	// the reconciler.
 	// TODO(jeremy): Should we return a duration which is the time after which to requeue another reconcile event?
-	Run() error
+	Run(event any) error
 }
 
 // Manager manages multiple reconcilers.
-// Its job is to ensure each syncer never running more than once
+// Its job is to ensure that
+//  1. A given reconciler is never running more than once concurrently
+//  2. Distributing the reconcile events among a pool of workers
 //
 // TODO(jeremy): What are the proper semantics for a GitHub reconciler? When does the reconciler get created?
 // Should it get created on the first webhook? What should the resync period be? Should we eventually forget
@@ -112,11 +115,22 @@ func (m *Manager) Start(numWorkers int, reSyncPeriod time.Duration) error {
 	return nil
 }
 
+// Item is a wrapper for a queue item
+type Item struct {
+	// Name of the reconciler
+	Name string
+	// Event is additional payload information
+	Event any
+}
+
 // Enqueue adds a sync event for the reconciler with the specified name
-func (m *Manager) Enqueue(name string) error {
+func (m *Manager) Enqueue(name string, payload any) error {
 	log := zapr.NewLogger(zap.L())
-	log.Info("Enqueing reconcile event", "reconciler", name)
-	m.q.Add(name)
+	log.Info("Enqueing reconcile event", "reconciler", name, "payload", payload)
+	m.q.Add(Item{
+		Name:  name,
+		Event: payload,
+	})
 	return nil
 }
 
@@ -139,29 +153,31 @@ func (m *Manager) runWorker(wid int, reSyncPeriod time.Duration) {
 			}
 			// We need to mark the item as done. Until the item is marked as done further processing is blocked.
 			defer m.q.Done(item)
-			if _, ok := item.(string); !ok {
+			if _, ok := item.(Item); !ok {
 				// This is unexpected mark it as done and keep going
-				log.Info("Got work queue item which is not a string; %v", item)
+				log.Info("Got work queue item which is not an Item; %v", item)
 				return shutdown
 			}
-			name := item.(string)
+			latest := item.(Item)
 			s, ok := func() (Reconciler, bool) {
 				m.mu.RLock()
 				defer m.mu.RUnlock()
-				r, ok := m.syncers[name]
+				r, ok := m.syncers[latest.Name]
 				return r, ok
 			}()
 
 			if !ok {
-				log.Info("Error; reconciler with name not found", "name", name)
+				log.Info("Error; reconciler with name not found", "name", latest.Name)
 				return shutdown
 			}
 
-			if err := s.Run(); err != nil {
-				log.Error(err, "Failed to sync", "name", name)
+			if err := s.Run(latest.Event); err != nil {
+				log.Error(err, "Failed to sync", "name", latest.Name)
 				return shutdown
 			}
-			m.q.AddAfter(name, reSyncPeriod)
+
+			// Leaving the event empty indicates it is a resync event
+			m.q.AddAfter(Item{Name: latest.Name}, reSyncPeriod)
 			return shutdown
 		}()
 

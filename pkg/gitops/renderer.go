@@ -41,10 +41,19 @@ type Renderer struct {
 
 	// sourcePath is the path relative to the root of the repo where the KRM functions should be applied.
 	sourcePath string
-	// commit is the commit to checkout
-	commit string
 }
 
+func NewRenderer(forkRepo *v1alpha1.GitHubRepo, destRepo *v1alpha1.GitHubRepo, workDir string, sourcePath string, transports *github.TransportManager) (*Renderer, error) {
+	r := &Renderer{
+		ForkRepo:   forkRepo,
+		DestRepo:   destRepo,
+		workDir:    workDir,
+		sourcePath: sourcePath,
+		transports: transports,
+	}
+
+	return r, nil
+}
 func (r *Renderer) init() error {
 	// Create a repo helper for the destRepo
 	tr, err := r.transports.Get(r.DestRepo.Org, r.DestRepo.Repo)
@@ -72,8 +81,28 @@ func (r *Renderer) init() error {
 
 	return nil
 }
-func (r *Renderer) Run() error {
+
+// RenderEvent is additional information about the render event
+type RenderEvent struct {
+	Commit string
+	// CheckRunName is the name of current check run.
+	// Blank if none exists
+	CheckRunName string
+}
+
+func (r *Renderer) Name() string {
+	// Name should be unique for a repository Reconciler type
+	return fmt.Sprintf("renderer-%v-%v", r.DestRepo.Org, r.DestRepo.Repo)
+}
+
+func (r *Renderer) Run(anyEvent any) error {
 	log := zapr.NewLogger(zap.L())
+
+	event, ok := anyEvent.(RenderEvent)
+	if !ok {
+		log.Error(fmt.Errorf("Expected RenderEvent but got %v", anyEvent), "Invalid event type", "event", anyEvent)
+		return fmt.Errorf("Event is not a RenderEvent")
+	}
 
 	if _, err := os.Stat(r.workDir); os.IsNotExist(err) {
 		log.V(util.Debug).Info("Creating work directory.", "directory", r.workDir)
@@ -119,6 +148,12 @@ func (r *Renderer) Run() error {
 		}
 	}
 
+	if event.Commit != "" {
+		// TODO(jeremy): We need to update PrepareBranch to properly create the branch from the commit.
+		err := errors.Errorf("Commit isn't properly supported yet. The branch is prepared off HEAD and not the commit")
+		log.Error(err, "Commit isn't properly supported yet.", "commit", event.Commit)
+	}
+
 	// Checkout the repository.
 	if err := r.repoHelper.PrepareBranch(true); err != nil {
 		return err
@@ -162,6 +197,8 @@ func (r *Renderer) Run() error {
 	if state != github.MergedState && state != github.ClosedState {
 		return fmt.Errorf("Failed to merge pr; state: %v", state)
 	}
+
+	// TODO(jeremy): We should properly update the checkruns.
 
 	return nil
 }
