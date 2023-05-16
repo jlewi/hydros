@@ -1,9 +1,10 @@
 package app
 
 import (
+	"github.com/jlewi/hydros/pkg/files"
+	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
-	"os"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
+	"io"
 )
 
 // Config is the configuration for the Hydros application
@@ -31,17 +32,45 @@ type HydrosConfig struct {
 	WebhookSecretURI string `yaml:"webhook_secret_uri"`
 }
 
-func ReadConfig(path string) (*Config, error) {
-	var c Config
+type App struct {
+	IntegrationID int64  `yaml:"integration_id" json:"integrationId"`
+	WebhookSecret string `yaml:"webhook_secret" json:"webhookSecret"`
+	PrivateKey    string `yaml:"private_key" json:"privateKey"`
+}
 
-	bytes, err := os.ReadFile(path)
+// BuildConfig is a helper function to build the configuration
+func BuildConfig(appId int64, webhookSecret string, privateKeySecret string) (*githubapp.Config, error) {
+	hmacSecret, err := readSecret(webhookSecret)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed reading server config file: %s", path)
+		return nil, errors.Wrapf(err, "Error reading webhook secret %s", webhookSecret)
 	}
 
-	if err := yaml.Unmarshal(bytes, &c); err != nil {
-		return nil, errors.Wrap(err, "failed parsing configuration file")
+	privateKey, err := readSecret(privateKeySecret)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error reading private key %s", privateKeySecret)
 	}
+	config := &githubapp.Config{
+		WebURL:   "https://github.com",
+		V3APIURL: "https://api.github.com",
+		V4APIURL: "https://api.github.com/graphql",
+		App: App{
+			IntegrationID: appId,
+			WebhookSecret: string(hmacSecret),
+			PrivateKey:    string(privateKey),
+		},
+	}
+	return config, nil
+}
 
-	return &c, nil
+func readSecret(secret string) ([]byte, error) {
+	f := &files.Factory{}
+	h, err := f.Get(secret)
+	if err != nil {
+		return nil, err
+	}
+	r, err := h.NewReader(secret)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(r)
 }

@@ -6,19 +6,19 @@ import (
 	"encoding/json"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
+	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 )
 
 type HydrosHandler struct {
 	githubapp.ClientCreator
-
-	preamble string
 }
 
 func (h *HydrosHandler) Handles() []string {
-	return []string{"issue_comment"}
+	return []string{"push"}
 }
 
 func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
@@ -55,6 +55,10 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 	//	return nil
 	//}
 
+	repoName, err := ghrepo.FromFullName(repo.GetFullName())
+	if err != nil {
+		return err
+	}
 	//repoOwner := repo.GetOwner().GetLogin()
 	//repoName := repo.GetName()
 	//author := event.GetComment().GetUser().GetLogin()
@@ -76,12 +80,24 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 	//}
 
 	// TODO(jeremy): We can use the checks client to create checks.
-	//installationID := githubapp.GetInstallationIDFromEvent(event)
-	//client, err := h.NewInstallationClient(installationID)
-	//if err != nil {
-	//	return err
-	//}
-	//client.Checks.CreateCheckRun(ctx, repo.GetOwner().GetName(), repo.GetName(), github.CreateCheckRunOptions{})
+	installationID := githubapp.GetInstallationIDFromEvent(event)
+	client, err := h.NewInstallationClient(installationID)
+	if err != nil {
+		return err
+	}
+	check, response, err := client.Checks.CreateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), github.CreateCheckRunOptions{
+		Name:       "hydros",
+		HeadSHA:    event.GetAfter(),
+		DetailsURL: proto.String("https://url.not.set.yet"),
+	})
 
+	if err != nil {
+		log.Error(err, "Failed to create check")
+		return err
+	}
+
+	log.Info("Created check", "check", check, "response", response)
+	// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
+	// I think "after" is the commit after the push.
 	return nil
 }

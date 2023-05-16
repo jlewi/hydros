@@ -26,6 +26,7 @@ import (
 const (
 	healthPath        = "/healthz"
 	githubWebhookPath = "/api/github/webhook"
+	UserAgent         = "hydros/0.0.1"
 )
 
 // Server is the server that wraps hydros in order to handle webhooks
@@ -65,7 +66,7 @@ func (s *Server) setupHandler() error {
 
 	cc, err := githubapp.NewDefaultCachingClientCreator(
 		s.config,
-		githubapp.WithClientUserAgent("hydros/1.0.0"),
+		githubapp.WithClientUserAgent(UserAgent),
 		githubapp.WithClientTimeout(3*time.Second),
 		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
 		githubapp.WithClientMiddleware(

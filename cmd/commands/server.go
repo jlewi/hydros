@@ -4,7 +4,6 @@ import (
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/app"
 	"github.com/jlewi/hydros/pkg/hydros"
-	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -41,34 +40,12 @@ func NewHydrosServerCmd() *cobra.Command {
 	return cmd
 }
 
-type App struct {
-	IntegrationID int64  `yaml:"integration_id" json:"integrationId"`
-	WebhookSecret string `yaml:"webhook_secret" json:"webhookSecret"`
-	PrivateKey    string `yaml:"private_key" json:"privateKey"`
-}
-
 func run(port int, webhookSecret string, privateKeySecret string, githubAppID int64) error {
-	hmacSecret, err := readSecret(webhookSecret)
+	config, err := app.BuildConfig(githubAppID, webhookSecret, privateKeySecret)
 	if err != nil {
-		return errors.Wrapf(err, "Error reading webhook secret %s", webhookSecret)
+		return errors.Wrapf(err, "Error building config")
 	}
-
-	privateKey, err := readSecret(privateKeySecret)
-	if err != nil {
-		return errors.Wrapf(err, "Error reading private key %s", privateKeySecret)
-	}
-	config := githubapp.Config{
-		WebURL:   "https://github.com",
-		V3APIURL: "https://api.github.com",
-		V4APIURL: "https://api.github.com/graphql",
-		App: App{
-			IntegrationID: githubAppID,
-			WebhookSecret: string(hmacSecret),
-			PrivateKey:    string(privateKey),
-		},
-	}
-
-	server, err := app.NewServer(port, config)
+	server, err := app.NewServer(port, *config)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create server")
 	}
