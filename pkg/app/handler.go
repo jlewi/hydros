@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -133,9 +132,8 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 
 	// Determine the name for the reconciler
 	// It should be unique for each repo and also particular type of reconciler.
-	rName := fmt.Sprintf("hydros-renderer-%s-%s", repoName.RepoOwner(), repoName.RepoName())
+	rName := gitops.RendererName(repoName.RepoOwner(), repoName.RepoName())
 
-	// Enqueue a sync event.
 	if !h.Manager.HasReconciler(rName) {
 
 		if ghrepo.FullName(repoName) != "jlewi/hydros-hydrated" {
@@ -159,9 +157,9 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		// Make sure workdir is unique for each reconciler.
 		workDir := filepath.Join(h.workDir, rName)
 
-		sourcePath := "tests/manifests"
+		sourcePath := "/"
 
-		r, err := gitops.NewRenderer(fork, dest, workDir, sourcePath, h.transports)
+		r, err := gitops.NewRenderer(fork, dest, workDir, sourcePath, h.transports, client)
 		if err != nil {
 			return err
 		}
@@ -173,6 +171,17 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 			log.Info("Ignoring AddReconciler DuplicateReconciler error; assuming its a race condition caused by simultaneous webhooks", "name", rName)
 		}
 	}
+
+	// Enqueue a sync event.
+	h.Manager.Enqueue(rName, gitops.RenderEvent{
+		Commit: event.GetAfter(),
+	})
+
+	if err != nil {
+		log.Error(err, "Failed to create check")
+		return err
+	}
+
 	//ref := event.GetRef()
 
 	// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push

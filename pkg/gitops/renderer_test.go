@@ -67,7 +67,6 @@ func Test_RendererManualE2E(t *testing.T) {
 			sourcePath: "tests/manifests",
 			repoHelper: nil,
 			transports: manager,
-			commit:     "",
 		}
 
 		return r.Run()
