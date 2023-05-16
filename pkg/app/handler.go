@@ -91,13 +91,15 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		DetailsURL: proto.String("https://url.not.set.yet"),
 	})
 
-	if err != nil {
+	client.Checks.UpdateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), check.GetID(), github.UpdateCheckRunOptions{
+
+		if err != nil{
 		log.Error(err, "Failed to create check")
 		return err
 	}
 
-	log.Info("Created check", "check", check, "response", response)
-	// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
-	// I think "after" is the commit after the push.
-	return nil
-}
+		log.Info("Created check", "check", check, "response", response)
+		// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
+		// I think "after" is the commit after the push.
+		return nil
+	}
