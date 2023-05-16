@@ -7,7 +7,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/gorilla/mux"
+	"github.com/gregjones/httpcache"
 	"github.com/jlewi/hydros/pkg/util"
+	"github.com/palantir/go-githubapp/githubapp"
+	"github.com/rcrowley/go-metrics"
+	"time"
+
 	// TODO(jeremy): We should move relevant code in jlewi/p22h to jlewi/monogo
 	"github.com/jlewi/p22h/backend/api"
 	"github.com/jlewi/p22h/backend/pkg/debug"
@@ -33,22 +38,52 @@ type Server struct {
 
 	router *mux.Router
 
+	config githubapp.Config
 	// Handler for GitHub webhooks
 	gitWebhook http.Handler
 }
 
 // NewServer creates a new server that relies on IAP as an authentication proxy.
-func NewServer(port int, gitWebhook http.Handler) (*Server, error) {
+func NewServer(port int, config githubapp.Config) (*Server, error) {
 	s := &Server{
-		log:        zapr.NewLogger(zap.L()),
-		port:       port,
-		gitWebhook: gitWebhook,
+		log:    zapr.NewLogger(zap.L()),
+		port:   port,
+		config: config,
 	}
 
+	if err := s.setupHandler(); err != nil {
+		return nil, err
+	}
 	if err := s.addRoutes(); err != nil {
 		return nil, err
 	}
 	return s, nil
+}
+
+func (s *Server) setupHandler() error {
+	metricsRegistry := metrics.DefaultRegistry
+
+	cc, err := githubapp.NewDefaultCachingClientCreator(
+		s.config,
+		githubapp.WithClientUserAgent("hydros/1.0.0"),
+		githubapp.WithClientTimeout(3*time.Second),
+		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
+		githubapp.WithClientMiddleware(
+			githubapp.ClientMetrics(metricsRegistry),
+		),
+	)
+	if err != nil {
+		return err
+	}
+
+	handler := &HydrosHandler{
+		ClientCreator: cc,
+		//preamble:      config.AppConfig.PullRequestPreamble,
+	}
+
+	s.gitWebhook = githubapp.NewEventDispatcher([]githubapp.EventHandler{handler}, s.config.App.WebhookSecret, githubapp.WithErrorCallback(LogErrorCallback))
+
+	return nil
 }
 
 // StartAndBlock starts the server and blocks.
@@ -70,6 +105,7 @@ func (s *Server) StartAndBlock() {
 }
 
 func (s *Server) addRoutes() error {
+	log := zapr.NewLogger(zap.L())
 	router := mux.NewRouter().StrictSlash(true)
 	s.router = router
 
@@ -78,7 +114,8 @@ func (s *Server) addRoutes() error {
 	// Setup OIDC
 	s.log.Info("Using IAP for authentication;  not adding OIDC login handlers")
 
-	router.Handle(githubWebhookPath, s.gitWebhook)
+	log.Info("Adding routes for GitHub webhooks", "path", githubWebhookPath)
+	router.Handle(githubapp.DefaultWebhookRoute, s.gitWebhook)
 	router.NotFoundHandler = http.HandlerFunc(s.notFoundHandler)
 
 	return nil
@@ -128,4 +165,13 @@ func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	s.writeStatus(w, fmt.Sprintf("OIDC server doesn't handle the path; url: %v", r.URL), http.StatusNotFound)
+}
+
+// LogErrorCallback handles errors by logging them
+func LogErrorCallback(w http.ResponseWriter, r *http.Request, err error) {
+	log := zapr.NewLogger(zap.L())
+	log = log.WithValues("githubHookID", r.Header.Get("X-GitHub-Hook-ID"))
+	log = log.WithValues("eventType", r.Header.Get("X-GitHub-Event"))
+	log = log.WithValues("deliverID", r.Header.Get("X-GitHub-Delivery"))
+	log.Error(err, "Failed to handle GitHub webhook")
 }
