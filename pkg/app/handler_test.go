@@ -27,6 +27,7 @@ func Test_HookManual(t *testing.T) {
 	// https://github.com/settings/apps/hydros-bot/advanced
 	event := &github.PushEvent{
 		After: proto.String("2422841179bc6928be43f9d0108632c673c87364"),
+		Ref:   proto.String("refs/heads/jlewi"),
 		Repo: &github.PushEventRepository{
 			FullName: &fullName,
 			Owner: &github.User{

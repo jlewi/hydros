@@ -85,21 +85,43 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 	if err != nil {
 		return err
 	}
-	check, response, err := client.Checks.CreateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), github.CreateCheckRunOptions{
-		Name:       "hydros",
-		HeadSHA:    event.GetAfter(),
-		DetailsURL: proto.String("https://url.not.set.yet"),
-	})
 
-	client.Checks.UpdateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), check.GetID(), github.UpdateCheckRunOptions{
+	// TODO(jeremy): Payload in push_event contains a list of added/removed/modified files. We could use that
+	// to determine whether hydros needs to run.
 
-		if err != nil{
-		log.Error(err, "Failed to create check")
-		return err
-	}
+	// Check if its the main branch. And if not we don't run AI generation.
+
+	if event.GetRef() != "refs/heads/main" {
+		log.Info("Not main branch. Skipping", "ref", event.GetRef())
+
+		// Update the PR with a CreateCheckRun
+
+		check, response, err := client.Checks.CreateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), github.CreateCheckRunOptions{
+			Name:       "hydros",
+			HeadSHA:    event.GetAfter(),
+			DetailsURL: proto.String("https://url.not.set.yet"),
+			Status:     proto.String("completed"),
+			Conclusion: proto.String("skipped"),
+			Output: &github.CheckRunOutput{
+				Title:   proto.String("Hydros skipped"),
+				Summary: proto.String("Hydros skipped"),
+				Text:    proto.String("Hydros skipped because this is not the main branch."),
+			},
+		})
+
+		//client.Checks.UpdateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), check.GetID(), github.UpdateCheckRunOptions{
+		//
+		if err != nil {
+			log.Error(err, "Failed to create check")
+			return err
+		}
 
 		log.Info("Created check", "check", check, "response", response)
-		// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
-		// I think "after" is the commit after the push.
 		return nil
 	}
+	//ref := event.GetRef()
+
+	// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
+	// I think "after" is the commit after the push.
+	return nil
+}
