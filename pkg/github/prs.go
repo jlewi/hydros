@@ -498,6 +498,31 @@ func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 	return nil
 }
 
+// HasChanges returns true if there are changes to be committed.
+func (h *RepoHelper) HasChanges() (bool, error) {
+	log := zapr.NewLogger(zap.L())
+	log = log.WithValues("org", h.baseRepo.RepoOwner(), "repo", h.baseRepo.RepoName(), "dir", h.fullDir)
+
+	// Open the repository
+	r, err := git.PlainOpenWithOptions(h.fullDir, &git.PlainOpenOptions{})
+	if err != nil {
+		return false, err
+	}
+	w, err := r.Worktree()
+	if err != nil {
+		return false, err
+	}
+	status, err := w.Status()
+	if err != nil {
+		return false, err
+	}
+	if status.IsClean() {
+		log.Info("No changes to commit")
+		return false, nil
+	}
+	return true, nil
+}
+
 // CommitAndPush and push commits and pushes all the working changes
 //
 // NullOp if nothing to commit.
