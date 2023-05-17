@@ -11,11 +11,22 @@ import (
 	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/util"
+	"github.com/palantir/go-githubapp/appconfig"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"os"
 	"path/filepath"
+	"time"
+)
+
+const (
+	// HydrosConfigPath default path to look for the hydros repository configuration file.
+	// TODO(jeremy): We should expose this as a configuration option for hydros.
+	HydrosConfigPath = "hydros.yaml"
+	// SharedRepository is the name of the repository containing the shared hydros configurationf or all repositories
+	SharedRepository = ".github"
 )
 
 type HydrosHandler struct {
@@ -25,6 +36,51 @@ type HydrosHandler struct {
 	transports *hGithub.TransportManager
 
 	workDir string
+
+	fetcher *ConfigFetcher
+}
+
+// NewHandler starts a new HydrosHandler for GitHub.
+// config: The GitHub configuration
+// workDir: The directory to use for storing temporary files and checking out repositories
+// numWorkers: The number of workers to use for processing events
+func NewHandler(cc githubapp.ClientCreator, transports *hGithub.TransportManager, workDir string, numWorkers int) (*HydrosHandler, error) {
+	log := zapr.NewLogger(zap.L())
+
+	fetcher := &ConfigFetcher{Loader: appconfig.NewLoader(
+		[]string{HydrosConfigPath},
+		appconfig.WithOwnerDefault(SharedRepository, []string{
+			HydrosConfigPath,
+		}),
+	)}
+
+	if workDir == "" {
+		tDir, err := os.MkdirTemp("", "hydros")
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to create temporary directory")
+		}
+		log.Info("Setting workDir to temporary directory", "workDir", tDir)
+		workDir = tDir
+	}
+
+	manager, err := gitops.NewManager([]gitops.Reconciler{})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := manager.Start(numWorkers, 1*time.Hour); err != nil {
+		return nil, err
+	}
+
+	handler := &HydrosHandler{
+		ClientCreator: cc,
+		transports:    transports,
+		fetcher:       fetcher,
+		workDir:       workDir,
+		Manager:       manager,
+	}
+
+	return handler, nil
 }
 
 func (h *HydrosHandler) Handles() []string {
@@ -43,51 +99,14 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		return err
 	}
 
-	//var event github.IssueCommentEvent
-	//if err := json.Unmarshal(payload, &event); err != nil {
-	//	return errors.Wrap(err, "failed to parse issue comment event payload")
-	//}
-	//
-	//if !event.GetIssue().IsPullRequest() {
-	//	zerolog.Ctx(ctx).Debug().Msg("Issue comment event is not for a pull request")
-	//	return nil
-	//}
-
 	repo := event.GetRepo()
 	action := event.GetAction()
 	log.Info("Got push event", "url", repo.GetURL(), "action", action)
-
-	// TODO(jeremy): Is this something we want to do? Its what the palantir sample app does
-	// ctx, logger := githubapp.PreparePRContext(ctx, installationID, repo, event.GetIssue().GetNumber())
-
-	//logger.Debug().Msgf("Event action is %s", event.GetAction())
-	//if event.GetAction() != "created" {
-	//	return nil
-	//}
 
 	repoName, err := ghrepo.FromFullName(repo.GetFullName())
 	if err != nil {
 		return err
 	}
-	//repoOwner := repo.GetOwner().GetLogin()
-	//repoName := repo.GetName()
-	//author := event.GetComment().GetUser().GetLogin()
-	//body := event.GetComment().GetBody()
-	//
-	//if strings.HasSuffix(author, "[bot]") {
-	//	logger.Debug().Msg("Issue comment was created by a bot")
-	//	return nil
-	//}
-	//
-	//logger.Debug().Msgf("Echoing comment on %s/%s#%d by %s", repoOwner, repoName, prNum, author)
-	//msg := fmt.Sprintf("%s\n%s said\n```\n%s\n```\n", h.preamble, author, body)
-	//prComment := github.IssueComment{
-	//	Body: &msg,
-	//}
-	//
-	//if _, _, err := client.Issues.CreateComment(ctx, repoOwner, repoName, prNum, &prComment); err != nil {
-	//	logger.Error().Err(err).Msg("Failed to comment on pull request")
-	//}
 
 	// TODO(jeremy): We can use the checks client to create checks.
 	installationID := githubapp.GetInstallationIDFromEvent(event)
@@ -96,11 +115,26 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		return err
 	}
 
+	refsPrefix := "refs/heads/"
+	branch := event.GetRef()[len(refsPrefix):]
+
+	config := h.fetcher.ConfigForRepositoryBranch(context.Background(), client, repoName.RepoOwner(), repoName.RepoName(), branch)
+
+	if config.LoadError != nil {
+		log.Error(config.LoadError, "Error loading config")
+		return config.LoadError
+	}
+	if config.Config == nil {
+		log.V(util.Debug).Info("No config found", "owner", repoName.RepoOwner(), "repo", repoName.RepoName(), "branch", branch)
+		return nil
+	}
+
+	// TODO(jeremy): Check if this is a branch for which we do in place modification.
+
 	// TODO(jeremy): Payload in push_event contains a list of added/removed/modified files. We could use that
 	// to determine whether hydros needs to run.
 
 	// Check if its the main branch. And if not we don't run AI generation.
-
 	if event.GetRef() != "refs/heads/main" {
 		log.Info("Not main branch. Skipping", "ref", event.GetRef())
 
