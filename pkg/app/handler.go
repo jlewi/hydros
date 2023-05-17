@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -129,17 +130,40 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		return nil
 	}
 
-	// TODO(jeremy): Check if this is a branch for which we do in place modification.
-
+	if msg, ok := v1alpha1.IsValid(config.Config); !ok {
+		log.Error(errors.Errorf(msg), "Invalid configuration", repoName.RepoOwner(), "repo", repoName.RepoName(), "branch", branch)
+		_, _, err := client.Checks.CreateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), github.CreateCheckRunOptions{
+			Name:       "hydros",
+			HeadSHA:    event.GetAfter(),
+			DetailsURL: proto.String("https://url.not.set.yet"),
+			Status:     proto.String("completed"),
+			Conclusion: proto.String("failure"),
+			Output: &github.CheckRunOutput{
+				Title:   proto.String("Hydros failed"),
+				Summary: proto.String("Hydros invalid configuration"),
+				Text:    proto.String(fmt.Sprintf("Hydros failed because config file, %v, is invalid. %s", HydrosConfigPath, msg)),
+			},
+		})
+		if err != nil {
+			log.Error(err, "Failed to create check run")
+		}
+		return errors.Errorf(msg)
+	}
 	// TODO(jeremy): Payload in push_event contains a list of added/removed/modified files. We could use that
 	// to determine whether hydros needs to run.
 
-	// Check if its the main branch. And if not we don't run AI generation.
-	if event.GetRef() != "refs/heads/main" {
-		log.Info("Not main branch. Skipping", "ref", event.GetRef())
+	// Check if its a branch for which we do in place configuration.
+	var inPlaceConfig *v1alpha1.InPlaceConfig
+	for _, inPlace := range config.Config.Spec.InPlaceConfigs {
+		if inPlace.BaseBranch == branch {
+			inPlaceConfig = &inPlace
+			break
+		}
+	}
 
+	if inPlaceConfig == nil {
+		log.Info("branch isn't configured for inplace changes.  Skipping", "ref", event.GetRef())
 		// Update the PR with a CreateCheckRun
-
 		check, response, err := client.Checks.CreateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), github.CreateCheckRunOptions{
 			Name:       "hydros",
 			HeadSHA:    event.GetAfter(),
@@ -153,8 +177,6 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 			},
 		})
 
-		//client.Checks.UpdateCheckRun(ctx, repoName.RepoOwner(), repoName.RepoName(), check.GetID(), github.UpdateCheckRunOptions{
-		//
 		if err != nil {
 			log.Error(err, "Failed to create check")
 			return err
@@ -178,22 +200,12 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		// TODO(jeremy): This information should come from the configuration checked into the repository.
 		// e.g.from the file .github/hydros.yaml
 
-		fork := &v1alpha1.GitHubRepo{
-			Org:    "jlewi",
-			Repo:   "hydros-hydrated",
-			Branch: "hydros/reconcile",
-		}
-		dest := &v1alpha1.GitHubRepo{
-			Org:    "jlewi",
-			Repo:   "hydros-hydrated",
-			Branch: "main",
-		}
+		org := "jlewi"
+		repo := "hydros-hydrated"
 		// Make sure workdir is unique for each reconciler.
 		workDir := filepath.Join(h.workDir, rName)
 
-		sourcePath := "/"
-
-		r, err := gitops.NewRenderer(fork, dest, workDir, sourcePath, h.transports, client)
+		r, err := gitops.NewRenderer(org, repo, workDir, h.transports, client)
 		if err != nil {
 			return err
 		}
@@ -208,7 +220,12 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 
 	// Enqueue a sync event.
 	h.Manager.Enqueue(rName, gitops.RenderEvent{
+		// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
+		// "After" is the commit after the push.
 		Commit: event.GetAfter(),
+		// Config could potentially be different for different commits
+		// So we pass it along with the event
+		BranchConfig: inPlaceConfig,
 	})
 
 	if err != nil {
@@ -216,9 +233,5 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		return err
 	}
 
-	//ref := event.GetRef()
-
-	// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
-	// I think "after" is the commit after the push.
 	return nil
 }
