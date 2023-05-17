@@ -6,7 +6,6 @@ import (
 	"github.com/google/go-github/v52/github"
 	"github.com/gregjones/httpcache"
 	hGithub "github.com/jlewi/hydros/pkg/github"
-	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/hydros"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
@@ -74,20 +73,9 @@ func Test_HookManual(t *testing.T) {
 		t.Errorf("Failed to create transport manager; error %v", err)
 	}
 
-	manager, err := gitops.NewManager([]gitops.Reconciler{})
+	handler, err := NewHandler(cc, transports, "/tmp/hydros_handler_test", 1)
 	if err != nil {
-		t.Fatalf("Failed to create manager; error %v", err)
-	}
-
-	if err := manager.Start(1, 1*time.Hour); err != nil {
-		t.Fatalf("Failed to start manager; error %v", err)
-	}
-
-	handler := &HydrosHandler{
-		ClientCreator: cc,
-		workDir:       "/tmp/hydros_handler_test",
-		transports:    transports,
-		Manager:       manager,
+		t.Fatalf("Failed to create handler; error %v", err)
 	}
 
 	if err := handler.Handle(context.Background(), "push", "1234", payload); err != nil {
@@ -96,6 +84,5 @@ func Test_HookManual(t *testing.T) {
 
 	//time.Sleep(10 * time.Minute)
 	// Wait for it to finish processing.
-	manager.Shutdown()
-
+	handler.Manager.Shutdown()
 }

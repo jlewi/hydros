@@ -7,12 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/gorilla/mux"
-	"github.com/gregjones/httpcache"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
-	"github.com/rcrowley/go-metrics"
-	"time"
-
 	// TODO(jeremy): We should move relevant code in jlewi/p22h to jlewi/monogo
 	"github.com/jlewi/p22h/backend/api"
 	"github.com/jlewi/p22h/backend/pkg/debug"
@@ -39,13 +35,14 @@ type Server struct {
 
 	router *mux.Router
 
-	config githubapp.Config
+	config  githubapp.Config
+	handler *HydrosHandler
 	// Handler for GitHub webhooks
 	gitWebhook http.Handler
 }
 
 // NewServer creates a new server that relies on IAP as an authentication proxy.
-func NewServer(port int, config githubapp.Config) (*Server, error) {
+func NewServer(port int, config githubapp.Config, handler *HydrosHandler) (*Server, error) {
 	s := &Server{
 		log:    zapr.NewLogger(zap.L()),
 		port:   port,
@@ -62,28 +59,7 @@ func NewServer(port int, config githubapp.Config) (*Server, error) {
 }
 
 func (s *Server) setupHandler() error {
-	metricsRegistry := metrics.DefaultRegistry
-
-	cc, err := githubapp.NewDefaultCachingClientCreator(
-		s.config,
-		githubapp.WithClientUserAgent(UserAgent),
-		githubapp.WithClientTimeout(3*time.Second),
-		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
-		githubapp.WithClientMiddleware(
-			githubapp.ClientMetrics(metricsRegistry),
-		),
-	)
-	if err != nil {
-		return err
-	}
-
-	handler := &HydrosHandler{
-		ClientCreator: cc,
-		//preamble:      config.AppConfig.PullRequestPreamble,
-	}
-
-	s.gitWebhook = githubapp.NewEventDispatcher([]githubapp.EventHandler{handler}, s.config.App.WebhookSecret, githubapp.WithErrorCallback(LogErrorCallback))
-
+	s.gitWebhook = githubapp.NewEventDispatcher([]githubapp.EventHandler{s.handler}, s.config.App.WebhookSecret, githubapp.WithErrorCallback(LogErrorCallback))
 	return nil
 }
 
