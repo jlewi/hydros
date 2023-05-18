@@ -7,6 +7,8 @@ metadata:
 resources:
 - ../base
 - namespace.yaml
+patches:
+  - path: serviceaccount.patch.yaml
 images:
 - name: hydros
   newName: us-west1-docker.pkg.dev/chat-lewi/hydros/hydros
