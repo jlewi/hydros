@@ -10,9 +10,9 @@ resources:
 - namespace.yaml
 - httproute.yaml
 patches:
-  - path: service.patch.yaml
-  - path: serviceaccount.patch.yaml
+- path: service.patch.yaml
+- path: serviceaccount.patch.yaml
 images:
 - name: hydros
   newName: us-west1-docker.pkg.dev/chat-lewi/hydros/hydros
-  newTag: a38e3a59-97b1-4a3c-81d6-0ecca4fac8a5
+  newTag: 3d7395b7-4ca8-4c4d-85bd-d30838ccd136

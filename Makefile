@@ -60,3 +60,4 @@ apply:
 	kubectl --context=hydros apply \
 		-R -f .build/run-hydros/hydros-dev-takeover/dest/hydros/lewi
 
+update: update-image hydrate apply

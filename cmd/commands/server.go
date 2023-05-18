@@ -26,12 +26,13 @@ func NewHydrosServerCmd() *cobra.Command {
 	var githubAppID int64
 	var workDir string
 	var numWorkers int
+	var baseHREF string
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Run the hydros server",
 		Run: func(cmd *cobra.Command, args []string) {
 			log := zapr.NewLogger(zap.L())
-			err := run(port, webhookSecret, privateKeySecret, githubAppID, workDir, numWorkers)
+			err := run(baseHREF, port, webhookSecret, privateKeySecret, githubAppID, workDir, numWorkers)
 			if err != nil {
 				log.Error(err, "Error running hydros")
 				os.Exit(1)
@@ -40,6 +41,7 @@ func NewHydrosServerCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to serve on")
+	cmd.Flags().StringVarP(&baseHREF, "base-href", "", "/hydros/", "The base prefix for all URLs should end with a slash or empty string to use no prefix")
 	cmd.Flags().StringVarP(&webhookSecret, "webhook-secret", "", defaultWebhookSecret, "The URI of the HMAC secret used to sign GitHub webhooks. Can be a secret in GCP secret manager")
 	cmd.Flags().StringVarP(&privateKeySecret, "private-key", "", "", "The URI of the GitHub App private key. Can be a secret in GCP secret manager")
 	cmd.Flags().Int64VarP(&githubAppID, "app-id", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
@@ -48,7 +50,7 @@ func NewHydrosServerCmd() *cobra.Command {
 	return cmd
 }
 
-func run(port int, webhookSecret string, privateKeySecret string, githubAppID int64, workDir string, numWorkers int) error {
+func run(baseHREF string, port int, webhookSecret string, privateKeySecret string, githubAppID int64, workDir string, numWorkers int) error {
 	log := zapr.NewLogger(zap.L())
 	config, err := app.BuildConfig(githubAppID, webhookSecret, privateKeySecret)
 	if err != nil {
@@ -80,7 +82,7 @@ func run(port int, webhookSecret string, privateKeySecret string, githubAppID in
 		return err
 	}
 
-	server, err := app.NewServer(port, *config, handler)
+	server, err := app.NewServer(baseHREF, port, *config, handler)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create server")
 	}

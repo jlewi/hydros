@@ -9,6 +9,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
+	"strings"
+
 	// TODO(jeremy): We should move relevant code in jlewi/p22h to jlewi/monogo
 	"github.com/jlewi/p22h/backend/api"
 	"github.com/jlewi/p22h/backend/pkg/debug"
@@ -20,9 +22,8 @@ import (
 )
 
 const (
-	healthPath        = "/healthz"
-	githubWebhookPath = "/api/github/webhook"
-	UserAgent         = "hydros/0.0.1"
+	healthPath = "/healthz"
+	UserAgent  = "hydros/0.0.1"
 )
 
 // Server is the server that wraps hydros in order to handle webhooks
@@ -39,14 +40,22 @@ type Server struct {
 	handler *HydrosHandler
 	// Handler for GitHub webhooks
 	gitWebhook http.Handler
+
+	baseHREF string
 }
 
 // NewServer creates a new server that relies on IAP as an authentication proxy.
-func NewServer(port int, config githubapp.Config, handler *HydrosHandler) (*Server, error) {
+func NewServer(baseHREF string, port int, config githubapp.Config, handler *HydrosHandler) (*Server, error) {
+	// Strip trailing slash from baseHREF so we can just it to the url path
+	if strings.HasSuffix(baseHREF, "/") {
+		baseHREF = baseHREF[:len(baseHREF)-1]
+	}
 	s := &Server{
-		log:    zapr.NewLogger(zap.L()),
-		port:   port,
-		config: config,
+		log:      zapr.NewLogger(zap.L()),
+		port:     port,
+		config:   config,
+		handler:  handler,
+		baseHREF: baseHREF,
 	}
 
 	if err := s.setupHandler(); err != nil {
@@ -86,13 +95,16 @@ func (s *Server) addRoutes() error {
 	router := mux.NewRouter().StrictSlash(true)
 	s.router = router
 
-	router.HandleFunc(healthPath, s.healthCheck)
+	hPath := s.baseHREF + healthPath
+	log.Info("Registering health check", "path", hPath)
+	router.HandleFunc(hPath, s.healthCheck)
 
 	// Setup OIDC
 	s.log.Info("Using IAP for authentication;  not adding OIDC login handlers")
 
+	githubWebhookPath := s.baseHREF + githubapp.DefaultWebhookRoute
 	log.Info("Adding routes for GitHub webhooks", "path", githubWebhookPath)
-	router.Handle(githubapp.DefaultWebhookRoute, s.gitWebhook)
+	router.Handle(githubWebhookPath, s.gitWebhook)
 	router.NotFoundHandler = http.HandlerFunc(s.notFoundHandler)
 
 	return nil
