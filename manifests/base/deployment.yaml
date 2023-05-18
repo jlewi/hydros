@@ -40,6 +40,12 @@ spec:
           requests:
             cpu: ".250"
             memory: .25Gi
+        livenessProbe:
+          httpGet:
+            path: /hydros/healthz
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
       serviceAccountName: hydros
 ---
 
