@@ -68,6 +68,9 @@ func NewServer(baseHREF string, port int, config githubapp.Config, handler *Hydr
 }
 
 func (s *Server) setupHandler() error {
+	if s.config.App.WebhookSecret == "" {
+		return fmt.Errorf("WebhookSecret must be set")
+	}
 	s.gitWebhook = githubapp.NewEventDispatcher([]githubapp.EventHandler{s.handler}, s.config.App.WebhookSecret, githubapp.WithErrorCallback(LogErrorCallback))
 	return nil
 }
