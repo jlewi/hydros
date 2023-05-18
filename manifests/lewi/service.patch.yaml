@@ -4,3 +4,4 @@ metadata:
   name: hydros
   annotations:
     cloud.google.com/neg: '{"exposed_ports":{"8080":{}}}'
+    cloud.google.com/backend-config: '{"default": "hydros"}'
