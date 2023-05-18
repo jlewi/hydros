@@ -33,7 +33,7 @@ func NewHydrosServerCmd() *cobra.Command {
 			log := zapr.NewLogger(zap.L())
 			err := run(port, webhookSecret, privateKeySecret, githubAppID, workDir, numWorkers)
 			if err != nil {
-				log.Error(err, "Error running starling service")
+				log.Error(err, "Error running hydros")
 				os.Exit(1)
 			}
 		},

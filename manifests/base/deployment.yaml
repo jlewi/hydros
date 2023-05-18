@@ -51,7 +51,4 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  annotations:
-    # TODO(jeremy): We will need to set a GCP service account if we want it to use services with GCP access
-    # iam.gke.io/gcp-service-account: hydros@chat-lewi.iam.gserviceaccount.com
   name: hydros
