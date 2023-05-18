@@ -40,7 +40,7 @@ build-image: build-dir build-image-submit build-image-logs
 set-image:
 	JOBID=$$(yq e ".id" .build/gcbjob.yaml) && \
 	cd manifests/lewi && \
-	kustomize edit set image hydros=us-west1-docker.pkg.dev/chat-lewi/hydros/hydros@sha256:$${JOBID}
+	kustomize edit set image hydros=us-west1-docker.pkg.dev/chat-lewi/hydros/hydros:$${JOBID}
 
 update-image: build-image set-image
 
@@ -52,3 +52,11 @@ hydrate:
 		--app-id=266158 \
 		--work-dir=.build/run-hydros \
 		--private-key="gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest"
+
+# Apply works by checking out the hydrated manifests and then applying them using a kubectl command.
+apply:
+	cd .build/run-hydros/hydros-dev-takeover/dest && git fetch origin && \
+		git checkout origin/main
+	kubectl --context=hydros apply \
+		-R -f .build/run-hydros/hydros-dev-takeover/dest/hydros/lewi
+

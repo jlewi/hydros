@@ -6,7 +6,8 @@ metadata:
     environment: lewi
 resources:
 - ../base
+- namespace.yaml
 images:
-- digest: sha256:a3844ec8-bded-4487-bb28-47268cdbc836
-  name: hydros
+- name: hydros
   newName: us-west1-docker.pkg.dev/chat-lewi/hydros/hydros
+  newTag: a3844ec8-bded-4487-bb28-47268cdbc836
