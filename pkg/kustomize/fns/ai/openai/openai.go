@@ -1,6 +1,8 @@
 package openai
 
 import (
+	"github.com/jlewi/hydros/pkg/files"
+	"io"
 	"os"
 	"path"
 
@@ -25,17 +27,30 @@ func GetAPIKey() string {
 	}
 
 	for _, f := range filesToTry {
-		log.Info("Trying to load API key from file", "file", f)
-		key, err := os.ReadFile(f)
+		log.Info("Trying to load API key from uri", "file", f)
+		key, err := readSecret(f)
 		if err != nil {
-			log.Info("Failed to read file", "file", f, "err", err)
+			log.Info("Failed to read URI", "uri", f, "err", err)
 			continue
 		}
 		if len(key) != 0 {
-			log.Info("Using API key from file", "file", f)
+			log.Info("Using API key from URI", "uri", f)
 			return string(key)
 		}
 	}
 	log.Info("Failed to find API key")
 	return ""
+}
+
+func readSecret(secret string) ([]byte, error) {
+	f := &files.Factory{}
+	h, err := f.Get(secret)
+	if err != nil {
+		return nil, err
+	}
+	r, err := h.NewReader(secret)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(r)
 }

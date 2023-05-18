@@ -15,4 +15,4 @@ patches:
 images:
 - name: hydros
   newName: us-west1-docker.pkg.dev/chat-lewi/hydros/hydros
-  newTag: 97a23e4e-b7d8-4527-9a62-9c5152484cf3
+  newTag: 7b3f4e24-51ba-4e16-a79d-8be2425dea7f
