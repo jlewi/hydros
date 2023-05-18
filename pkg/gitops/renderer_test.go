@@ -49,28 +49,19 @@ func Test_RendererManualE2E(t *testing.T) {
 		}
 
 		r := Renderer{
-			//SourceRepo: &v1alpha1.GitHubRepo{
-			//	Org:    "jlewi",
-			//	Repo:   "hydros",
-			//	Branch: "jlewi/ai",
-			//},
-			ForkRepo: &v1alpha1.GitHubRepo{
-				Org:    "jlewi",
-				Repo:   "hydros",
-				Branch: "jlewi/ai-test",
-			},
-			DestRepo: &v1alpha1.GitHubRepo{
-				Org:    "jlewi",
-				Repo:   "hydros",
-				Branch: "jlewi/ai",
-			},
 			workDir:    "/tmp/test_renderer",
-			sourcePath: "tests/manifests",
-			repoHelper: nil,
 			transports: manager,
 		}
 
-		return r.Run()
+		event := RenderEvent{
+			Commit: "",
+			BranchConfig: &v1alpha1.InPlaceConfig{
+				BaseBranch: "main",
+				PRBranch:   "hydros/manual-test",
+				AutoMerge:  false,
+			},
+		}
+		return r.Run(event)
 	}()
 	if err != nil {
 		t.Fatalf("Error running renderer; %v", err)

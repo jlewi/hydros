@@ -26,7 +26,7 @@ const (
 	RendererCheckName = "hydros-ai"
 )
 
-// Renderer handles in place modification of YAML files.
+// Renderer is a reconciler that handles in place modification of YAML files.
 // It is intended to run a bunch of KRM functions in place and then check the modifications back into the repository.
 //
 // There is currently one renderer per repository. A single renderer can handle multiple branches but not
@@ -38,19 +38,9 @@ const (
 // when hydrating into a different repository (e.g. via Syncer) but not when changes are to be checked into the
 // source repository.
 type Renderer struct {
-	org  string
-	repo string
-	// ForkRepo is the repo into which the changes will be pushed and the PR created from
-	//ForkRepo *v1alpha1.GitHubRepo `yaml:"forkRepo,omitempty"`
-	//
-	//// DestRepo is the repo into which a PR will be created to merge hydrated
-	//// manifests from the ForkRepo
-	//DestRepo *v1alpha1.GitHubRepo `yaml:"destRepo,omitempty"`
-
-	workDir string
-
-	// repoHelper helps with creating PRs
-	// repoHelper *github.RepoHelper
+	org        string
+	repo       string
+	workDir    string
 	transports *github.TransportManager
 
 	client *ghAPI.Client
@@ -58,8 +48,6 @@ type Renderer struct {
 
 func NewRenderer(org string, name string, workDir string, transports *github.TransportManager, client *ghAPI.Client) (*Renderer, error) {
 	r := &Renderer{
-		//ForkRepo:   forkRepo,
-		//DestRepo:   destRepo,
 		org:        org,
 		repo:       name,
 		workDir:    workDir,
@@ -99,6 +87,9 @@ func (r *Renderer) Run(anyEvent any) error {
 		return fmt.Errorf("Event is not a RenderEvent")
 	}
 
+	// TODO(https://github.com/jlewi/hydros/issues/32): The semantics should probably be that we skip running if
+	// we aren't the latest commit. So if the commit is specified we should verify its the latest commit and if not
+	// skip it.
 	if event.Commit == "" {
 		// When no commit is specified we should run on the latest commit. This means
 		// 1. We need to fetch the latest commit
@@ -209,15 +200,15 @@ func (r *Renderer) Run(anyEvent any) error {
 			}
 		}
 
-		if event.Commit != "" {
-			// TODO(jeremy): We need to update PrepareBranch to properly create the branch from the commit.
-			err := errors.Errorf("Commit isn't properly supported yet. The branch is prepared off HEAD and not the commit")
-			log.Error(err, "Commit isn't properly supported yet.", "commit", event.Commit)
-		}
-
 		// Checkout the repository.
 		if err := repoHelper.PrepareBranch(true); err != nil {
 			return err
+		}
+
+		if event.Commit != "" {
+			// TODO(https://github.com/jlewi/hydros/issues/32): We should check whether commit is the latest
+			// commit on the branch and if it isn't we should the run.
+			log.Info("Warning. Commit is set in RenderEvent but code will use code from latest commit regardless of whether it matches the commit. See https://github.com/jlewi/hydros/issues/32.", "commit", event.Commit)
 		}
 
 		syncNeeded, err := r.syncNeeded()

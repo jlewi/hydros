@@ -91,7 +91,6 @@ func Test_HookManual(t *testing.T) {
 		t.Fatalf("Failed to handle the push")
 	}
 
-	//time.Sleep(10 * time.Minute)
 	// Wait for it to finish processing.
 	handler.Manager.Shutdown()
 }
@@ -175,9 +174,6 @@ func latestCommit(transports *hGithub.TransportManager, repo ghrepo.Interface, w
 	if err != nil {
 		return "", err
 	}
-
-	// The short tag will be used to tag the artifacts
-	//b.commitTag = ref.Hash().String()[0:7]
 
 	log.Info("Current commit", "commit", ref.Hash().String())
 	return ref.Hash().String(), nil

@@ -39,7 +39,11 @@ type App struct {
 	PrivateKey    string `yaml:"private_key" json:"privateKey"`
 }
 
-// BuildConfig is a helper function to build the configuration
+// BuildConfig is a helper function to build the GitHubApp configuration.
+// Palantir libraries use *githubapp.Config for basic configuration. We don't necessarily want to directly use
+// that configuration because not all of those options make sense. For example, we allow URIs to be used
+// for the secrets. So this is a helper function to convert our values into githubapp.Config which
+// can be passed to those libraries.
 func BuildConfig(appId int64, webhookSecret string, privateKeySecret string) (*githubapp.Config, error) {
 	hmacSecret, err := readSecret(webhookSecret)
 	if err != nil {

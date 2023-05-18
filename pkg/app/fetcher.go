@@ -12,7 +12,7 @@ import (
 
 // FetchedConfig represents the hydros configuration fetched from GitHub and used to configure hydros
 type FetchedConfig struct {
-	Config     *v1alpha1.Config
+	Config     *v1alpha1.HydrosConfig
 	LoadError  error
 	ParseError error
 
@@ -39,7 +39,7 @@ func (cf *ConfigFetcher) ConfigForRepositoryBranch(ctx context.Context, client *
 		return fc
 	}
 
-	var pc v1alpha1.Config
+	var pc v1alpha1.HydrosConfig
 	if err := yaml.UnmarshalStrict(c.Content, &pc); err != nil {
 		fc.ParseError = err
 	} else {

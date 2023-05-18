@@ -31,6 +31,9 @@ const (
 	SharedRepository = ".github"
 )
 
+// HydrosHandler is a handler for certain GitHub events. It currently handles PushEvents by sending them to
+// Renderer which knows how to do in place modification using KRMs.
+// TODO(jeremy): Also handle syncer.
 type HydrosHandler struct {
 	githubapp.ClientCreator
 	Manager *gitops.Manager
@@ -38,12 +41,12 @@ type HydrosHandler struct {
 	transports *hGithub.TransportManager
 
 	workDir string
-
 	fetcher *ConfigFetcher
 }
 
 // NewHandler starts a new HydrosHandler for GitHub.
-// config: The GitHub configuration
+// cc: ClientCreator for creating GitHub clients.
+// transports: Manage GitHub transports
 // workDir: The directory to use for storing temporary files and checking out repositories
 // numWorkers: The number of workers to use for processing events
 func NewHandler(cc githubapp.ClientCreator, transports *hGithub.TransportManager, workDir string, numWorkers int) (*HydrosHandler, error) {
@@ -90,11 +93,14 @@ func (h *HydrosHandler) Handles() []string {
 }
 
 func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
-	// TODO(jeremy): How do we distinguish between pushing a PR and merging a PR.
 	log := zapr.NewLogger(zap.L()).WithValues("eventType", eventType, "deliverID", deliveryID)
 	log.V(util.Debug).Info("Got github webhook")
 	r := bytes.NewBuffer(payload)
 	d := json.NewDecoder(r)
+
+	// Handle push events.
+	// GitHub push events are sent whenever a branch is pushed. I believe a single push could contain multiple commits.
+	// When a PR is merged, that will trigger a push with the commits pushed to the target branch.
 	event := &github.PushEvent{}
 	if err := d.Decode(event); err != nil {
 		log.Error(err, "Failed to decode a PushEvent")
@@ -110,7 +116,6 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		return err
 	}
 
-	// TODO(jeremy): We can use the checks client to create checks.
 	installationID := githubapp.GetInstallationIDFromEvent(event)
 	client, err := h.NewInstallationClient(installationID)
 	if err != nil {
@@ -192,21 +197,11 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 	rName := gitops.RendererName(repoName.RepoOwner(), repoName.RepoName())
 
 	if !h.Manager.HasReconciler(rName) {
-
-		if ghrepo.FullName(repoName) != "jlewi/hydros-hydrated" {
-			return errors.Errorf("Currently only the repository jlewi/hydros-hydrated. Code needs to be updated to support other repositories")
-		}
 		log.Info("Creating reconciler", "name", rName)
-
-		// TODO(jeremy): This information should come from the configuration checked into the repository.
-		// e.g.from the file .github/hydros.yaml
-
-		org := "jlewi"
-		repo := "hydros-hydrated"
 		// Make sure workdir is unique for each reconciler.
 		workDir := filepath.Join(h.workDir, rName)
 
-		r, err := gitops.NewRenderer(org, repo, workDir, h.transports, client)
+		r, err := gitops.NewRenderer(repoName.RepoOwner(), repoName.RepoName(), workDir, h.transports, client)
 		if err != nil {
 			return err
 		}
@@ -224,7 +219,7 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		// https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
 		// "After" is the commit after the push.
 		Commit: event.GetAfter(),
-		// Config could potentially be different for different commits
+		// HydrosConfig could potentially be different for different commits
 		// So we pass it along with the event
 		BranchConfig: inPlaceConfig,
 	})

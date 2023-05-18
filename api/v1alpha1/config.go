@@ -2,8 +2,9 @@ package v1alpha1
 
 import "strings"
 
-// Config stores the hydros configuration.
-type Config struct {
+// HydrosConfig is hydros GitHub App configuration. This is the configuration that should be checked into
+// a repository to configure hydros on that repository
+type HydrosConfig struct {
 	APIVersion string     `yaml:"apiVersion"`
 	Kind       string     `yaml:"kind"`
 	Metadata   Metadata   `yaml:"metadata"`
@@ -35,7 +36,7 @@ type InPlaceConfig struct {
 
 // IsValid returns true if the config is valid.
 // For invalid config the string will be a message of validation errors
-func IsValid(c *Config) (string, bool) {
+func IsValid(c *HydrosConfig) (string, bool) {
 	errors := make([]string, 0, 10)
 	baseBranches := make(map[string]bool)
 	prBranches := make(map[string]bool)
@@ -53,7 +54,7 @@ func IsValid(c *Config) (string, bool) {
 	}
 
 	if len(errors) > 0 {
-		return "Config is invalid. " + strings.Join(errors, ". "), false
+		return "HydrosConfig is invalid. " + strings.Join(errors, ". "), false
 	}
 	return "", true
 }
