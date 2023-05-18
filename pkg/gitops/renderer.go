@@ -251,7 +251,11 @@ func (r *Renderer) Run(anyEvent any) error {
 		}
 
 		message := "Hydros AI generating configurations"
-		if err := repoHelper.CommitAndPush(message, false); err != nil {
+
+		// Do a force pushed because we want to overwrite the branch with any changes.
+		// If we don't do force push then pushes get blocked if there was a previous PR which was merged and
+		// the branch wasn't deleted.
+		if err := repoHelper.CommitAndPush(message, true); err != nil {
 			return err
 		}
 		pr, err := repoHelper.CreatePr(message, []string{})
