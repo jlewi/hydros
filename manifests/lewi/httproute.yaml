@@ -12,9 +12,13 @@ spec:
     - "platform.roboweb.app"
   rules:
     - matches:
+      # As extra security precaution only expose very specific routes
       - path:
-          type: PathPrefix
-          value: "/hydros/"
+          type: Exact
+          value: "/hydros/api/github/hook"
+      - path:
+          type: Exact
+          value: "/hydros/healthz"
       backendRefs:
         - name: hydros
           port: 8080
