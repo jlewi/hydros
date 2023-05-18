@@ -173,7 +173,7 @@ func (g *GeneratorFn) init() error {
 	}
 
 	if g.apiKey == "" {
-		return errors.New("No OpenAI API key specified. Set the environment variable OPENAI_API_KEY.")
+		return errors.New("No OpenAI API key specified. Set the environment variable OPENAI_API_KEY or OPENAI_API_KEY_URI.")
 	}
 
 	g.client = gpt3.NewClient(string(g.apiKey), gpt3.WithTimeout(1*time.Minute))

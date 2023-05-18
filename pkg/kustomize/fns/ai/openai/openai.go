@@ -19,6 +19,18 @@ func GetAPIKey() string {
 		return key
 	}
 
+	uri := os.Getenv("OPENAI_API_KEY_URI")
+	if uri != "" {
+		key, err := readSecret(uri)
+		if err == nil && len(key) > 0 {
+			log.Info("Obtained OpenAI API Key from URI specified in environment variable OPENAI_API_KEY_URI", "uri", uri)
+			return string(key)
+		}
+		if err != nil || len(key) == 0 {
+			log.Info("Failed to read OpenAI API Key from URI in OPENAI_API_KEY_URI environment variable", "uri", uri, "err", err)
+		}
+	}
+
 	// get home directory
 	home, err := os.UserHomeDir()
 	filesToTry := []string{}
