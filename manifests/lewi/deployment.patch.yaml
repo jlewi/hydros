@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       containers:
-        - image: hydros
+        - name: hydros
           env:
             - name: OPENAI_API_KEY
               value: gcpSecretManager:///projects/chat-lewi/secrets/openai-api-key/versions/latest
