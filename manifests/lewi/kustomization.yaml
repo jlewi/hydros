@@ -10,6 +10,7 @@ resources:
 - namespace.yaml
 - httproute.yaml
 patches:
+- path: deployment.patch.yaml
 - path: service.patch.yaml
 - path: serviceaccount.patch.yaml
 images:
