@@ -1,0 +1,31 @@
+steps:
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      # Tag it with the GCB build id. This way there is a unique tag for each build
+      # and we can use it to reference the image e.g. when substituting into kustomize.
+      - --destination=us-west1-docker.pkg.dev/$PROJECT_ID/hydros/hydros:$BUILD_ID
+      - --destination=us-west1-docker.pkg.dev/$PROJECT_ID/hydros/hydros:$COMMIT_SHA
+      - --destination=us-west1-docker.pkg.dev/$PROJECT_ID/hydros/hydros:latest
+      - --dockerfile=Dockerfile
+      # Default cache is two weeks
+      - --cache=true
+# N.B. We don't need images because we are using the kaniko executor which
+# automatically pushes images.
+tags:
+  - "dev"
+options:
+  # Increasing VCPU can increase build times but also comes with a provisioning
+  # delay since they are only started on demand (they are also more expensive).
+  # Private pools could potentially fix the delay cost
+  # See: https://cloud.google.com/build/docs/optimize-builds/increase-vcpu-for-builds#increase_vcpu_for_default_pools
+  # See: https://cloud.google.com/build/pricing
+  # See: https://cloud.google.com/build/docs/api/reference/rest/v1/projects.builds#machinetype
+  # For values. UNSPECIFIED uses the default value which has 1 CPU
+  machineType: 'UNSPECIFIED'
+  # Figure out best practice for logging mode. Docs say GCS is the default but they might be refering
+  # to fact that cloud logging and GCS are enabled by default.
+  # I'm not sure what the implications cost wise are. With CLOUD_LOGGING_ONLY
+  # Console UI shows timestamps of log messages which is useful. However, that might
+  # also be something we could include by adding the appropriate options to Cloud Build loggings format.
+  # If your only looking at the logs in the Cloud Build console; what's the point of using Cloud Logging?
+  logging: GCS_ONLY

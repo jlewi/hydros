@@ -2,12 +2,16 @@ package commands
 
 import (
 	"github.com/go-logr/zapr"
+	"github.com/gregjones/httpcache"
 	"github.com/jlewi/hydros/pkg/app"
+	hGithub "github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/hydros"
+	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"os"
+	"time"
 )
 
 const (
@@ -20,12 +24,14 @@ func NewHydrosServerCmd() *cobra.Command {
 	var webhookSecret string
 	var privateKeySecret string
 	var githubAppID int64
+	var workDir string
+	var numWorkers int
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Run the hydros server",
 		Run: func(cmd *cobra.Command, args []string) {
 			log := zapr.NewLogger(zap.L())
-			err := run(port, webhookSecret, privateKeySecret, githubAppID)
+			err := run(port, webhookSecret, privateKeySecret, githubAppID, workDir, numWorkers)
 			if err != nil {
 				log.Error(err, "Error running starling service")
 				os.Exit(1)
@@ -37,15 +43,44 @@ func NewHydrosServerCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&webhookSecret, "webhook-secret", "", defaultWebhookSecret, "The URI of the HMAC secret used to sign GitHub webhooks. Can be a secret in GCP secret manager")
 	cmd.Flags().StringVarP(&privateKeySecret, "private-key", "", "", "The URI of the GitHub App private key. Can be a secret in GCP secret manager")
 	cmd.Flags().Int64VarP(&githubAppID, "app-id", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
+	cmd.Flags().StringVarP(&workDir, "work-dir", "", "", "(Optional) work directory where repositories should be checked out. Leave blank to use a temporary directory.")
+	cmd.Flags().IntVarP(&numWorkers, "num-workers", "", 10, "Number of workers to handle events.")
 	return cmd
 }
 
-func run(port int, webhookSecret string, privateKeySecret string, githubAppID int64) error {
+func run(port int, webhookSecret string, privateKeySecret string, githubAppID int64, workDir string, numWorkers int) error {
+	log := zapr.NewLogger(zap.L())
 	config, err := app.BuildConfig(githubAppID, webhookSecret, privateKeySecret)
 	if err != nil {
 		return errors.Wrapf(err, "Error building config")
 	}
-	server, err := app.NewServer(port, *config)
+
+	cc, err := githubapp.NewDefaultCachingClientCreator(
+		*config,
+		githubapp.WithClientUserAgent(app.UserAgent),
+		githubapp.WithClientTimeout(3*time.Second),
+		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
+	)
+
+	if err != nil {
+		return errors.Wrapf(err, "Error creating client creator")
+	}
+
+	secret, err := readSecret(privateKeySecret)
+	if err != nil {
+		return errors.Wrapf(err, "Could not read secret: %v", privateKeySecret)
+	}
+	transports, err := hGithub.NewTransportManager(githubAppID, secret, log)
+	if err != nil {
+		return err
+	}
+
+	handler, err := app.NewHandler(cc, transports, workDir, 10)
+	if err != nil {
+		return err
+	}
+
+	server, err := app.NewServer(port, *config, handler)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create server")
 	}

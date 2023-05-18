@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  labels:
+    app: hydros
+    environment: lewi
+resources:
+- ../base
+images:
+- digest: sha256:a3844ec8-bded-4487-bb28-47268cdbc836
+  name: hydros
+  newName: us-west1-docker.pkg.dev/chat-lewi/hydros/hydros
