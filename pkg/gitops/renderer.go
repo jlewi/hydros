@@ -3,6 +3,7 @@ package gitops
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,7 +47,14 @@ type Renderer struct {
 	client *ghAPI.Client
 }
 
-func NewRenderer(org string, name string, workDir string, transports *github.TransportManager, client *ghAPI.Client) (*Renderer, error) {
+func NewRenderer(org string, name string, workDir string, transports *github.TransportManager) (*Renderer, error) {
+	ghTr, err := transports.Get(org, name)
+	if err != nil {
+		return nil, err
+	}
+	hClient := &http.Client{Transport: ghTr}
+
+	client := ghAPI.NewClient(hClient)
 	r := &Renderer{
 		org:        org,
 		repo:       name,
@@ -80,21 +88,28 @@ func (r *Renderer) Name() string {
 }
 
 func (r *Renderer) Run(anyEvent any) error {
-	log := zapr.NewLogger(zap.L())
+	log := zapr.NewLogger(zap.L()).WithValues("renderer", r.Name(), "org", r.org, "repo", r.repo)
 	event, ok := anyEvent.(RenderEvent)
 	if !ok {
 		log.Error(fmt.Errorf("Expected RenderEvent but got %v", anyEvent), "Invalid event type", "event", anyEvent)
 		return fmt.Errorf("Event is not a RenderEvent")
 	}
 
-	// TODO(https://github.com/jlewi/hydros/issues/32): The semantics should probably be that we skip running if
-	// we aren't the latest commit. So if the commit is specified we should verify its the latest commit and if not
-	// skip it.
 	if event.Commit == "" {
-		// When no commit is specified we should run on the latest commit. This means
-		// 1. We need to fetch the latest commit
-		// 2. We need to fetch the config for that commit
-		return fmt.Errorf("Renderer.Run(anyEvent) needs to be updated to handle the case when no commit is specified")
+		repos := r.client.Repositories
+		branch, _, err := repos.GetBranch(context.Background(), r.org, r.repo, event.BranchConfig.BaseBranch, false)
+		if err != nil {
+			log.Error(err, "Failed to get branch; unable to determine the latest commit", "branch", event.BranchConfig.BaseBranch)
+			return err
+		}
+
+		if branch.Commit.SHA == nil {
+			err := fmt.Errorf("Branch %v doesn't have a commit SHA", event.BranchConfig.BaseBranch)
+			log.Error(err, "Failed to get branch; unable to determine the latest commit", "branch", event.BranchConfig.BaseBranch)
+			return err
+		}
+		event.Commit = *branch.Commit.SHA
+		log.Info("Using latest commit from branch", "commit", event.Commit)
 	}
 
 	// TODO(jeremy): This will fail if we don't have a commit.
@@ -206,9 +221,15 @@ func (r *Renderer) Run(anyEvent any) error {
 		}
 
 		if event.Commit != "" {
-			// TODO(https://github.com/jlewi/hydros/issues/32): We should check whether commit is the latest
-			// commit on the branch and if it isn't we should the run.
-			log.Info("Warning. Commit is set in RenderEvent but code will use code from latest commit regardless of whether it matches the commit. See https://github.com/jlewi/hydros/issues/32.", "commit", event.Commit)
+			ref, err := repoHelper.Head()
+			if err != nil {
+				return err
+			}
+
+			if ref.Hash().String() != event.Commit {
+				log.Info("Commit doesn't match the head commit of the target branch; skipping sync because we only want to run on the latest changes", "commit", event.Commit, "head", ref.Hash().String())
+				return nil
+			}
 		}
 
 		syncNeeded, err := r.syncNeeded()

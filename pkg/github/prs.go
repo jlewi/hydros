@@ -523,6 +523,15 @@ func (h *RepoHelper) HasChanges() (bool, error) {
 	return true, nil
 }
 
+// Head returns the reference of the head commit of the branch.
+func (h *RepoHelper) Head() (*plumbing.Reference, error) {
+	gitRepo, err := git.PlainOpenWithOptions(h.fullDir, &git.PlainOpenOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return gitRepo.Head()
+}
+
 // CommitAndPush and push commits and pushes all the working changes
 //
 // NullOp if nothing to commit.

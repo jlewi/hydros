@@ -1,10 +1,6 @@
 package gitops
 
 import (
-	"io"
-	"os"
-	"testing"
-
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/files"
@@ -13,6 +9,9 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"io"
+	"os"
+	"testing"
 )
 
 func readSecret(secret string) ([]byte, error) {
@@ -48,9 +47,12 @@ func Test_RendererManualE2E(t *testing.T) {
 			return err
 		}
 
-		r := Renderer{
-			workDir:    "/tmp/test_renderer",
-			transports: manager,
+		org := "jlewi"
+		repo := "hydros-hydrated"
+
+		r, err := NewRenderer(org, repo, "/tmp/render_test_manual", manager)
+		if err != nil {
+			return err
 		}
 
 		event := RenderEvent{
@@ -64,6 +66,6 @@ func Test_RendererManualE2E(t *testing.T) {
 		return r.Run(event)
 	}()
 	if err != nil {
-		t.Fatalf("Error running renderer; %v", err)
+		t.Fatalf("Error running renderer; %+v", err)
 	}
 }
