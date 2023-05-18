@@ -17,7 +17,7 @@ spec:
     org: jlewi
     repo: hydrated
     branch: main
-  sourcePath: /
+  sourcePath: /manifests
   selector:
     matchLabels:
       app: hydros
