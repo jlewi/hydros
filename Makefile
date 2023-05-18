@@ -50,5 +50,5 @@ hydrate:
 	hydros takeover \
 		--file=$(ROOT)/manifests/manifestsync.yaml \
 		--app-id=266158 \
-		--work-dir=.build/hydros \
+		--work-dir=.build/run-hydros \
 		--private-key="gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest"
