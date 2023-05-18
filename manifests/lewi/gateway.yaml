@@ -15,7 +15,7 @@ spec:
           type: Prefix
           value: "/hydros"
       backendRefs:
-        - name: 8080
+        - name: hydros
           port: 8080
 
 # ---
