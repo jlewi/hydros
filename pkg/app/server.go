@@ -99,9 +99,6 @@ func (s *Server) addRoutes() error {
 	log.Info("Registering health check", "path", hPath)
 	router.HandleFunc(hPath, s.healthCheck)
 
-	// Setup OIDC
-	s.log.Info("Using IAP for authentication;  not adding OIDC login handlers")
-
 	githubWebhookPath := s.baseHREF + githubapp.DefaultWebhookRoute
 	log.Info("Adding routes for GitHub webhooks", "path", githubWebhookPath)
 	router.Handle(githubWebhookPath, s.gitWebhook)
@@ -153,7 +150,7 @@ func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	s.writeStatus(w, fmt.Sprintf("OIDC server doesn't handle the path; url: %v", r.URL), http.StatusNotFound)
+	s.writeStatus(w, fmt.Sprintf("Hydros server doesn't handle the path; url: %v", r.URL), http.StatusNotFound)
 }
 
 // LogErrorCallback handles errors by logging them
