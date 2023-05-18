@@ -9,6 +9,7 @@ resources:
 - namespace.yaml
 - gateway.yaml
 patches:
+  - path: service.patch.yaml
   - path: serviceaccount.patch.yaml
 images:
 - name: hydros
