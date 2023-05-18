@@ -8,5 +8,5 @@ spec:
       containers:
         - name: hydros
           env:
-            - name: OPENAI_API_KEY
+            - name: OPENAI_API_KEY_URI
               value: gcpSecretManager:///projects/chat-lewi/secrets/openai-api-key/versions/latest
