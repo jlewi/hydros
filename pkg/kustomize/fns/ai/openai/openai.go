@@ -1,10 +1,11 @@
 package openai
 
 import (
-	"github.com/jlewi/hydros/pkg/files"
 	"io"
 	"os"
 	"path"
+
+	"github.com/jlewi/hydros/pkg/files"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"

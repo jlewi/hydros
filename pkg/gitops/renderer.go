@@ -3,6 +3,11 @@ package gitops
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/zapr"
 	ghAPI "github.com/google/go-github/v52/github"
@@ -14,10 +19,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 const (

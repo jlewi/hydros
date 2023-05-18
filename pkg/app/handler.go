@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -17,9 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 const (

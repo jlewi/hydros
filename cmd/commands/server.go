@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"os"
+	"time"
+
 	"github.com/go-logr/zapr"
 	"github.com/gregjones/httpcache"
 	"github.com/jlewi/hydros/pkg/app"
@@ -10,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"os"
-	"time"
 )
 
 const (

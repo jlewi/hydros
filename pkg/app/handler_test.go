@@ -3,6 +3,10 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-logr/zapr"
@@ -16,9 +20,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"testing"
-	"time"
 )
 
 func Test_HookManual(t *testing.T) {

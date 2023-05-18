@@ -4,21 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/gorilla/mux"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
-	"strings"
 
 	// TODO(jeremy): We should move relevant code in jlewi/p22h to jlewi/monogo
-	"github.com/jlewi/p22h/backend/api"
-	"github.com/jlewi/p22h/backend/pkg/debug"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/jlewi/p22h/backend/api"
+	"github.com/jlewi/p22h/backend/pkg/debug"
+	"go.uber.org/zap"
 )
 
 const (

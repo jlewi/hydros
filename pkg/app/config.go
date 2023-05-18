@@ -1,10 +1,11 @@
 package app
 
 import (
+	"io"
+
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
-	"io"
 )
 
 // Config is the configuration for the Hydros application

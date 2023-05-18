@@ -2,12 +2,13 @@ package gitops
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/util/workqueue"
-	"sync"
-	"time"
 )
 
 // Reconciler defines a common interface for reconcilers so that Manager can be used to manage different
