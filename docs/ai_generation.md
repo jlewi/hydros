@@ -10,7 +10,7 @@ related to inference.
 
 There are two parts to configuring Hydros AI
 
-1. Configuring the HydrosAI KRM function
+1. Configuring the HydrosAI [KRM function](https://kpt.dev/book/02-concepts/03-functions)
    * This KRM function is responsible for generating the configuration changes
      from the natural language descriptions.
 2. Attaching `ai.hydros.io/${TAG}` annotations to your configuration files.
@@ -25,7 +25,7 @@ plugins into KRM function declarations.
 
 A major challenge to using Cloud is creating levels of abstraction for configuration that reflect the separation
 of concerns among teams [Tweet thread](https://twitter.com/kelseyhightower/status/1646538701818986501?s=20).
-For example, many developers within an organization may need to spin up a simple web apps accessible over the intranet. 
+For example, many developers within an organization may need to spin up simple web apps accessible over the intranet. 
 However, only a small number of developers may have a good understanding of networking 
 (e.g. ISTIO, Gateway, Certificates, etc...).
 
@@ -66,7 +66,7 @@ The developer can then run `hydros generate` to use AI to generate the KRM funct
 
 ## Configuring the HydrosAI KRM function
 
-Define a KPT function which specifies all the KRM functions you want Hydros to be aware of.
+Define a KRM function which specifies all the KRM functions you want Hydros to be aware of.
 For each KRM function provide a `FilterSpec` which is an OpenAPI schema of the function.
 Here's an example
 
@@ -178,4 +178,5 @@ containing the KRM function declarations generated from the annotation.
 
 ## References
 
-[Blog on Cruise's Teams](https://medium.com/cruise/building-a-container-platform-at-cruise-part-1-507f3d561e6f)
+[Blog on Cruise's Teams](https://medium.com/cruise/building-a-container-platform-at-cruise-part-1-507f3d561e6f) - A
+useful reference point for the myriad ways organizations can be structured.
