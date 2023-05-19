@@ -3,7 +3,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
@@ -37,7 +37,7 @@ func GetInstallID(appID int64, privateKey []byte, owner string, repo string) (in
 		return 0, errors.WithStack(errors.Wrapf(err, "there was a problem getting the GitHub installation id; Get %v returned statusCode %v; Response:\n%+v", url, resp.StatusCode, resp))
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, errors.WithStack(errors.Wrapf(err, "there was a problem reading the response body"))
 	}

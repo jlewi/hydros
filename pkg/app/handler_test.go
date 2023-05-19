@@ -81,6 +81,10 @@ func Test_HookManual(t *testing.T) {
 		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
 	)
 
+	if err != nil {
+		t.Fatalf("Failed to create client creator; error %v", err)
+	}
+
 	handler, err := NewHandler(cc, transports, "/tmp/hydros_handler_test", 1)
 	if err != nil {
 		t.Fatalf("Failed to create handler; error %v", err)
