@@ -137,7 +137,7 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 		s.selector = selector
 	}
 
-	// Ensure we can get transports for each repo; this basically verfies the app is authorized
+	// Ensure we can get transports for each repo; this basically verifies the app is authorized
 	// for each repo.
 	for _, repo := range getRepos(*s.manifest) {
 		if _, err := s.transports.Get(repo.Org, repo.Repo); err != nil {
@@ -169,7 +169,7 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 	}
 
 	s.repoHelper = repoHelper
-	s.log.Info("Successfuly created Syncer")
+	s.log.Info("Successfully created Syncer")
 	return s, nil
 }
 

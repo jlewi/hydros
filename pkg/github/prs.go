@@ -265,6 +265,11 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) (*api.PullReque
 	return pr, err
 }
 
+// Email returns the value of email used by this repohelper.
+func (h *RepoHelper) Email() string {
+	return h.email
+}
+
 // PullRequestForBranch returns the PR for the given branch if it exists and nil if no PR exists.
 // TODO(jeremy): Can we change this to api.PullRequest?
 func (h *RepoHelper) PullRequestForBranch() (*PullRequest, error) {
@@ -491,6 +496,40 @@ func (h *RepoHelper) PrepareBranch(dropChanges bool) error {
 	}
 
 	return nil
+}
+
+// HasChanges returns true if there are changes to be committed.
+func (h *RepoHelper) HasChanges() (bool, error) {
+	log := zapr.NewLogger(zap.L())
+	log = log.WithValues("org", h.baseRepo.RepoOwner(), "repo", h.baseRepo.RepoName(), "dir", h.fullDir)
+
+	// Open the repository
+	r, err := git.PlainOpenWithOptions(h.fullDir, &git.PlainOpenOptions{})
+	if err != nil {
+		return false, err
+	}
+	w, err := r.Worktree()
+	if err != nil {
+		return false, err
+	}
+	status, err := w.Status()
+	if err != nil {
+		return false, err
+	}
+	if status.IsClean() {
+		log.Info("No changes to commit")
+		return false, nil
+	}
+	return true, nil
+}
+
+// Head returns the reference of the head commit of the branch.
+func (h *RepoHelper) Head() (*plumbing.Reference, error) {
+	gitRepo, err := git.PlainOpenWithOptions(h.fullDir, &git.PlainOpenOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return gitRepo.Head()
 }
 
 // CommitAndPush and push commits and pushes all the working changes

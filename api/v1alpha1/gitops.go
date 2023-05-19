@@ -50,7 +50,7 @@ type ManifestSync struct {
 // ManifestSyncSpec is the spec for ManifestSync.
 type ManifestSyncSpec struct {
 	SourceRepo GitHubRepo `yaml:"sourceRepo,omitempty"`
-	// ForkRepo is the repo into which the hydratd manifests will be pushed
+	// ForkRepo is the repo into which the hydrated manifests will be pushed
 	ForkRepo GitHubRepo `yaml:"forkRepo,omitempty"`
 	// DestRepo is the repo into which a PR will be created to merge hydrated
 	// manifests from the ForkRepo

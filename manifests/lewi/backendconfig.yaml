@@ -1,0 +1,13 @@
+# TODO(jeremy): Use a BackendConfig to enable IAP
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: hydros
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /hydros/healthz
+    # Since we USE a neg the port must match the port on the pod not the service
+    # The healthcheck uses a port that is different from the actual service
+    # because that's how the envoy proxy works.
+    port: 8080

@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: hydros
+metadata:
+  labels:
+    app: hydros
+    environment: dev
+labels:
+- includeSelectors: true
+  pairs:
+    app: hydros
+resources:
+- deployment.yaml
+

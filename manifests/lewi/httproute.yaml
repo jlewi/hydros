@@ -1,0 +1,24 @@
+# Add an HTTPRoute to connect the loadbalancer to the istio-ingressgateway
+kind: HTTPRoute
+apiVersion: gateway.networking.k8s.io/v1beta1
+metadata:
+  name: hydros-webhook
+spec:
+  parentRefs:
+    - kind: Gateway
+      name: platform
+      namespace: gateway
+  hostnames:
+    - "platform.roboweb.app"
+  rules:
+    - matches:
+      # As extra security precaution only expose very specific routes
+      - path:
+          type: Exact
+          value: "/hydros/api/github/hook"
+      - path:
+          type: Exact
+          value: "/hydros/healthz"
+      backendRefs:
+        - name: hydros
+          port: 8080

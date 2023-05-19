@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hydros
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    component: hydros
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hydros
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:    
+        component: hydros
+    spec:
+      containers:
+      - image: hydros
+        name: hydros
+        command:
+        - /hydros
+        - serve
+        - --private-key=gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest
+        - --webhook-secret=gcpSecretManager:///projects/chat-lewi/secrets/hydros-webhook/versions/latest
+        resources:
+          # Keep the footprint small to try to minimize cost.
+          limits:
+            cpu: ".25"
+            memory: .25Gi
+          requests:
+            cpu: ".250"
+            memory: .25Gi
+        livenessProbe:
+          httpGet:
+            path: /hydros/healthz
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+      serviceAccountName: hydros
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hydros

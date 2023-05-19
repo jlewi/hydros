@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  labels:
+    app: hydros
+    environment: lewi
+resources:
+- ../base
+- backendconfig.yaml
+- namespace.yaml
+- httproute.yaml
+patches:
+- path: deployment.patch.yaml
+- path: service.patch.yaml
+- path: serviceaccount.patch.yaml
+images:
+- name: hydros
+  newName: us-west1-docker.pkg.dev/chat-lewi/hydros/hydros
+  newTag: 37d37c74-cd10-4fb9-86a0-06282f6b5e2d

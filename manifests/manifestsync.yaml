@@ -1,0 +1,25 @@
+ # This configuration is for taking over dev
+
+apiVersion: mlp.primer.ai/v1alpha1
+kind: ManifestSync
+metadata:
+  name: hydros-dev-takeover
+spec:
+  sourceRepo:
+    org: jlewi
+    repo: hydros
+    branch: dev-takeover
+  forkRepo:
+    org: jlewi
+    repo: hydrated
+    branch: hydros/hydros-takeover
+  destRepo:
+    org: jlewi
+    repo: hydrated
+    branch: main
+  sourcePath: /manifests
+  selector:
+    matchLabels:
+      app: hydros
+      environment: lewi
+  destPath: hydros
