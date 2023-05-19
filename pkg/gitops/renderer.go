@@ -3,6 +3,7 @@ package gitops
 import (
 	"context"
 	"fmt"
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -112,7 +113,7 @@ func (r *Renderer) Run(anyEvent any) error {
 		log.Info("Using latest commit from branch", "commit", event.Commit)
 	}
 
-	// TODO(jeremy): This will fail if we don't have a commit.
+	// CreateCheckRun requires a commit in order to attach a run to.
 	// N.B. There is a bit of a race condition here. We risk reporting
 	// the run as queued when it isn't actually because we crash before calling enqueue. However, its always
 	// possible that the app crashes after it was enqueued but before it succeeds. That should eventually be handled
@@ -134,12 +135,6 @@ func (r *Renderer) Run(anyEvent any) error {
 	}
 	log.Info("Created check", "check", check, "response", response)
 
-	// Create a repo helper for the destRepo
-	tr, err := r.transports.Get(r.org, r.repo)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to get transport for repo %v/%v; Is the GitHub app installed in that repo?", r.org, r.repo)
-	}
-
 	if event.BranchConfig == nil {
 		return errors.New("BranchConfig is nil")
 	}
@@ -150,6 +145,14 @@ func (r *Renderer) Run(anyEvent any) error {
 
 	if event.BranchConfig.PRBranch == "" {
 		return errors.New("PRBranch is empty")
+	}
+
+	clientTr := r.client.Client().Transport
+
+	// TODO(jeremy): This is brittle.
+	tr, ok := clientTr.(*ghinstallation.Transport)
+	if !ok {
+		return errors.New("Failed to get transport for repo; TR is not of type ghinstallation.Transport")
 	}
 
 	args := &github.RepoHelperArgs{

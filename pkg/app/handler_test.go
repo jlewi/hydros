@@ -3,12 +3,12 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/gregjones/httpcache"
@@ -17,7 +17,6 @@ import (
 	"github.com/jlewi/hydros/pkg/hydros"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/palantir/go-githubapp/githubapp"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -41,7 +40,7 @@ func Test_HookManual(t *testing.T) {
 	repo := ghrepo.New("jlewi", "hydros-hydrated")
 	branch := "main"
 
-	commit, err := latestCommit(transports, repo, "/tmp/test_hook_manual_get_repo", branch)
+	commit, err := latestCommit(transports, repo, branch)
 	if err != nil {
 		t.Fatalf("Could not get latest commit; error: %v", err)
 	}
@@ -96,85 +95,27 @@ func Test_HookManual(t *testing.T) {
 }
 
 // Get the latest commit
-func latestCommit(transports *hGithub.TransportManager, repo ghrepo.Interface, workDir string, branch string) (string, error) {
+func latestCommit(transports *hGithub.TransportManager, repo ghrepo.Interface, branch string) (string, error) {
 	log := zapr.NewLogger(zap.L())
-	url := ghrepo.FormatRemoteURL(repo, "https")
 
 	tr, err := transports.Get(repo.RepoOwner(), repo.RepoName())
 	if err != nil {
 		return "", nil
 	}
 
-	appAuth := &hGithub.AppAuth{
-		Tr: tr,
-	}
-	// Clone the repository if it hasn't already been cloned.
-	err = func() error {
-		if _, err := os.Stat(workDir); err == nil {
-			log.Info("Directory exists; repository will not be cloned", "directory", workDir)
-			return nil
-		}
+	client := github.NewClient(&http.Client{Transport: tr})
 
-		opts := &git.CloneOptions{
-			URL:      url,
-			Auth:     appAuth,
-			Progress: os.Stdout,
-		}
-
-		_, err := git.PlainClone(workDir, false, opts)
-		return err
-	}()
-
+	repos := client.Repositories
+	b, _, err := repos.GetBranch(context.Background(), repo.RepoOwner(), repo.RepoName(), branch, false)
 	if err != nil {
+		log.Error(err, "Failed to get branch; unable to determine the latest commit", "branch", branch)
+	}
+
+	if b.Commit.SHA == nil {
+		err := fmt.Errorf("Branch %v doesn't have a commit SHA", branch)
+		log.Error(err, "Failed to get branch; unable to determine the latest commit", "branch", branch)
 		return "", err
 	}
 
-	// Open the repository
-	gitRepo, err := git.PlainOpenWithOptions(workDir, &git.PlainOpenOptions{})
-	if err != nil {
-		return "", errors.Wrapf(err, "Could not open respoistory at %v; ensure the directory contains a git repo", workDir)
-	}
-
-	// Do a fetch to make sure the remote is up to date.
-	remote := "origin"
-	log.Info("Fetching remote", "remote", remote)
-	if err := gitRepo.Fetch(&git.FetchOptions{
-		RemoteName: remote,
-		Auth:       appAuth,
-	}); err != nil {
-		// Fetch returns an error if its already up to date and we want to ignore that.
-		if err.Error() != "already up-to-date" {
-			return "", err
-		}
-	}
-
-	// If commit is specified check it out
-
-	hash, err := gitRepo.ResolveRevision(plumbing.Revision(branch))
-
-	if err != nil {
-		return "", errors.Wrapf(err, "Could not resolve branch %s", branch)
-	}
-
-	log.Info("Checking out branch", "branch", branch)
-	w, err := gitRepo.Worktree()
-	if err != nil {
-		return "", err
-	}
-	err = w.Checkout(&git.CheckoutOptions{
-		Hash:  *hash,
-		Force: true,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "Failed to checkout branh %s", branch)
-	}
-
-	// Get the current commit
-	ref, err := gitRepo.Head()
-	if err != nil {
-		return "", err
-	}
-
-	log.Info("Current commit", "commit", ref.Hash().String())
-	return ref.Hash().String(), nil
+	return *b.Commit.SHA, nil
 }

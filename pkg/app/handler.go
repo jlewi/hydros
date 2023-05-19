@@ -37,7 +37,7 @@ const (
 type HydrosHandler struct {
 	githubapp.ClientCreator
 	Manager *gitops.Manager
-	// TODO(jeremy): ClientCreator and TransportManager are somewhat redundant
+	// TODO(jeremy): ClientCreator and TransportManager are somewhat redundant.
 	transports *hGithub.TransportManager
 
 	workDir string
@@ -201,7 +201,7 @@ func (h *HydrosHandler) Handle(ctx context.Context, eventType, deliveryID string
 		// Make sure workdir is unique for each reconciler.
 		workDir := filepath.Join(h.workDir, rName)
 
-		r, err := gitops.NewRenderer(repoName.RepoOwner(), repoName.RepoName(), workDir, h.transports, client)
+		r, err := gitops.NewRenderer(repoName.RepoOwner(), repoName.RepoName(), workDir, h.transports)
 		if err != nil {
 			return err
 		}
