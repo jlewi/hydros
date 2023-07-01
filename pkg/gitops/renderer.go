@@ -3,12 +3,13 @@ package gitops
 import (
 	"context"
 	"fmt"
-	"github.com/bradleyfalzon/ghinstallation/v2"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/bradleyfalzon/ghinstallation/v2"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/zapr"

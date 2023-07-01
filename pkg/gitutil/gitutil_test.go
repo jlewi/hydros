@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 )
 
 func Test_LocateRoot(t *testing.T) {
@@ -70,5 +73,59 @@ func Test_LocateRoot(t *testing.T) {
 				t.Errorf("Got %v; want %v", actual, expected)
 			}
 		})
+	}
+}
+
+func Test_GitIgnore(t *testing.T) {
+	dir, err := os.MkdirTemp("", "testGitignore")
+	defer os.RemoveAll(dir)
+
+	if err != nil {
+		t.Fatalf("Could not create temp dir %v", err)
+	}
+
+	r, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("Could not initialize git repo %v", err)
+	}
+
+	//storer := filesystem.NewStorage(osfs.New(dir), cache.NewObjectLRUDefault())
+	//r, err := git.Init(storer, nil)
+	//if err != nil {
+	//	t.Fatalf("Could not initialize git repo %v", err)
+	//}
+
+	// Creat a .gitignore file
+	gitIgnoreContents := `
+**/.build
+`
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitIgnoreContents), 0o644); err != nil {
+		t.Fatalf("Could not create .gitignore file %v", err)
+	}
+
+	// Create a file to be ignored
+	if err := os.MkdirAll(filepath.Join(dir, ".build"), 0o777); err != nil {
+		t.Fatalf("Could not create .build directory %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".build", "notcommited"), []byte("foo"), 0o644); err != nil {
+		t.Fatalf("Could not create file %v", err)
+	}
+
+	w, err := r.Worktree()
+	if err != nil {
+		t.Fatalf("Could not get worktree %v", err)
+	}
+
+	if err := AddGitignoreToWorktree(w, dir); err != nil {
+		t.Fatalf("Failed to add gitignore patterns %v", err)
+	}
+
+	if len(w.Excludes) != 1 {
+		t.Fatalf("Expected 1 exclude pattern, got %v", len(w.Excludes))
+	}
+
+	// N.B. I think the arguments to match is an array of the path parts
+	if result := w.Excludes[0].Match([]string{"other", ".build"}, true); result != gitignore.Exclude {
+		t.Errorf("Expected Exclude; got %v", result)
 	}
 }
