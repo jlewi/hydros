@@ -1,6 +1,10 @@
 package gitops
 
 import (
+	"io"
+	"os"
+	"testing"
+
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/files"
@@ -9,9 +13,6 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"io"
-	"os"
-	"testing"
 )
 
 func readSecret(secret string) ([]byte, error) {

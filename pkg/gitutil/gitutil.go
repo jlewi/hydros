@@ -50,7 +50,7 @@ func AddGitignoreToWorktree(wt *git.Worktree, repositoryPath string) error {
 		return nil
 	}
 	readFile, err := os.Open(path)
-	util.DeferIgnoreError(readFile.Close)
+	defer util.DeferIgnoreError(readFile.Close)
 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read .gitignore: %s", path)
@@ -61,8 +61,14 @@ func AddGitignoreToWorktree(wt *git.Worktree, repositoryPath string) error {
 
 	for fileScanner.Scan() {
 		ignorePattern := fileScanner.Text()
+		if ignorePattern == "" {
+			continue
+		}
 		log.V(util.Debug).Info("add .gitignore pattern to ignore list", "pattern", ignorePattern)
 		wt.Excludes = append(wt.Excludes, gitignore.ParsePattern(ignorePattern, nil))
+	}
+	if err := fileScanner.Err(); err != nil {
+		return err
 	}
 	return nil
 }
