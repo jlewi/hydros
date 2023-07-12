@@ -591,7 +591,7 @@ func (s *Syncer) PushLocal(wDir string, keyFile string) error {
 	// GitHub uses git for the username.
 	appAuth, err := ssh.NewPublicKeysFromFile("git", keyFile, "")
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load ssh key from keyfile %v", keyFile)
+		return errors.Wrapf(err, "Failed to load ssh key from keyfile %v; is your SSH key password protected? Hydros currently requires no password to be set", keyFile)
 	}
 	log.Info("Located root of git repository", "root", root, "wDir", wDir)
 	// Open the repository
