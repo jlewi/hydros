@@ -108,20 +108,6 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 
 	s.workDir = filepath.Join(s.workDir, m.Metadata.Name)
 	s.log.Info("workdir is set.", "workDir", s.workDir)
-	if s.sess == nil {
-		// TODO(jeremy): Is there a better way to set the default region?
-		// The session can be injected via an option.
-		region := "us-west-2"
-		s.log.Info("Creating an AWS session using defaults.", "region", region)
-		sess, err := session.NewSession(&aws.Config{
-			Region: aws.String(region),
-		})
-		if err != nil {
-			s.log.Error(err, "Failed to create AWS session")
-			return nil, err
-		}
-		s.sess = sess
-	}
 	s.log = s.log.WithValues("ManifestSync.Name", s.manifest.Metadata.Name)
 
 	s.execHelper = &util.ExecHelper{

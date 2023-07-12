@@ -89,12 +89,6 @@ func Test_GitIgnore(t *testing.T) {
 		t.Fatalf("Could not initialize git repo %v", err)
 	}
 
-	//storer := filesystem.NewStorage(osfs.New(dir), cache.NewObjectLRUDefault())
-	//r, err := git.Init(storer, nil)
-	//if err != nil {
-	//	t.Fatalf("Could not initialize git repo %v", err)
-	//}
-
 	// Creat a .gitignore file
 	gitIgnoreContents := `
 **/.build
