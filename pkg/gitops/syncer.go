@@ -108,20 +108,6 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 
 	s.workDir = filepath.Join(s.workDir, m.Metadata.Name)
 	s.log.Info("workdir is set.", "workDir", s.workDir)
-	if s.sess == nil {
-		// TODO(jeremy): Is there a better way to set the default region?
-		// The session can be injected via an option.
-		region := "us-west-2"
-		s.log.Info("Creating an AWS session using defaults.", "region", region)
-		sess, err := session.NewSession(&aws.Config{
-			Region: aws.String(region),
-		})
-		if err != nil {
-			s.log.Error(err, "Failed to create AWS session")
-			return nil, err
-		}
-		s.sess = sess
-	}
 	s.log = s.log.WithValues("ManifestSync.Name", s.manifest.Metadata.Name)
 
 	s.execHelper = &util.ExecHelper{
@@ -605,7 +591,7 @@ func (s *Syncer) PushLocal(wDir string, keyFile string) error {
 	// GitHub uses git for the username.
 	appAuth, err := ssh.NewPublicKeysFromFile("git", keyFile, "")
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load ssh key")
+		return errors.Wrapf(err, "Failed to load ssh key from keyfile %v; is your SSH key password protected? Hydros currently requires no password to be set", keyFile)
 	}
 	log.Info("Located root of git repository", "root", root, "wDir", wDir)
 	// Open the repository
