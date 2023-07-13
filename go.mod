@@ -3,9 +3,16 @@ module github.com/jlewi/hydros
 go 1.19
 
 replace (
-	k8s.io/api => k8s.io/api v0.22.5
-	k8s.io/apimachinery => k8s.io/apimachinery v0.22.5
-	k8s.io/client-go => k8s.io/client-go v0.22.5
+	// N.B. ugprading to the latest version of K8s client fixed a dependency error which
+	// was that we were simulatenously importing github.com/googleapis/gnostic/extensions
+	// and github.com/google/gnostic/extensions which was giving us a conflict because the protocol extension
+	// was defined twice. Based on https://github.com/google/gnostic/commit/b1b34ea319d376a07745cc0ab90c7204cb2a7953
+	// googleapis/gnostic is replaced by google/gnostic so maybe by upgrading to a newer version we pulled in code
+	// which is all using google/gnostic
+	k8s.io/api => k8s.io/api v0.27.3
+	k8s.io/apimachinery => k8s.io/apimachinery v0.27.3
+	k8s.io/client-go => k8s.io/client-go v0.27.3
+
 )
 
 exclude (
@@ -36,8 +43,8 @@ require (
 	go.uber.org/zap v1.24.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.26.2
-	k8s.io/apimachinery v0.26.2
+	k8s.io/api v0.27.3
+	k8s.io/apimachinery v0.27.3
 	sigs.k8s.io/kustomize/api v0.11.4
 	sigs.k8s.io/kustomize/kyaml v0.13.6
 )
@@ -144,6 +151,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
@@ -177,7 +185,6 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
-	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -216,6 +223,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.12.0 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -290,8 +298,9 @@ require (
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
+	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 // indirect
+	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kind v0.17.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
