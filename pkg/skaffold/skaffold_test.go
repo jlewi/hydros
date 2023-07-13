@@ -5,7 +5,6 @@ import (
 	"path"
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jlewi/hydros/pkg/util"
 )
@@ -55,18 +54,18 @@ func Test_LoadSkaffoldConfigs_Skip(t *testing.T) {
 func TestChangeRegistry(t *testing.T) {
 	type testCase struct {
 		Name     string
-		Config   *latestV2.SkaffoldConfig
-		Expected *latestV2.SkaffoldConfig
+		Config   *SkaffoldConfig
+		Expected *SkaffoldConfig
 		Registry string
 	}
 
 	testCases := []testCase{
 		{
 			Name: "basic",
-			Config: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Build: latestV2.BuildConfig{
-						Artifacts: []*latestV2.Artifact{
+			Config: &SkaffoldConfig{
+				Pipeline: Pipeline{
+					Build: BuildConfig{
+						Artifacts: []*Artifact{
 							{
 								ImageName: "12345.dkr.ecr.us-west-2.amazonaws.com/hydros/hydros",
 							},
@@ -78,10 +77,10 @@ func TestChangeRegistry(t *testing.T) {
 				},
 			},
 			Registry: "newregistry",
-			Expected: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Build: latestV2.BuildConfig{
-						Artifacts: []*latestV2.Artifact{
+			Expected: &SkaffoldConfig{
+				Pipeline: Pipeline{
+					Build: BuildConfig{
+						Artifacts: []*Artifact{
 							{
 								ImageName: "newregistry/hydros/hydros",
 							},
@@ -95,10 +94,10 @@ func TestChangeRegistry(t *testing.T) {
 		},
 		{
 			Name: "empty-registry",
-			Config: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Build: latestV2.BuildConfig{
-						Artifacts: []*latestV2.Artifact{
+			Config: &SkaffoldConfig{
+				Pipeline: Pipeline{
+					Build: BuildConfig{
+						Artifacts: []*Artifact{
 							{
 								ImageName: "12345.dkr.ecr.us-west-2.amazonaws.com/hydros/hydros",
 							},
@@ -110,10 +109,10 @@ func TestChangeRegistry(t *testing.T) {
 				},
 			},
 			Registry: "",
-			Expected: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Build: latestV2.BuildConfig{
-						Artifacts: []*latestV2.Artifact{
+			Expected: &SkaffoldConfig{
+				Pipeline: Pipeline{
+					Build: BuildConfig{
+						Artifacts: []*Artifact{
 							{
 								ImageName: "12345.dkr.ecr.us-west-2.amazonaws.com/hydros/hydros",
 							},

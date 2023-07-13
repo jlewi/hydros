@@ -8,7 +8,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-logr/logr"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -188,7 +187,7 @@ func RunBuild(skaffoldFile string, buildDir string, tags []string, sess *session
 		return errors.Wrapf(err, "Could not open skaffold output file; %v", outFile)
 	}
 
-	builds, err := flags.ParseBuildOutput(data)
+	builds, err := ParseBuildOutput(data)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to parse skaffold build output")
 	}

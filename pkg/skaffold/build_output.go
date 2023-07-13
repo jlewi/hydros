@@ -17,7 +17,14 @@ type BuildOutputFileFlag struct {
 
 // BuildOutput is the output of `skaffold build`.
 type BuildOutput struct {
-	Builds []Artifact `json:"builds"`
+	Builds []BuildArtifact `json:"builds"`
+}
+
+// BuildArtifact is the result corresponding to each successful build.
+type BuildArtifact struct {
+	ImageName   string `json:"imageName"`
+	Tag         string `json:"tag"`
+	RuntimeType string `json:"-"`
 }
 
 func (t *BuildOutputFileFlag) String() string {
@@ -64,7 +71,7 @@ func (t *BuildOutputFileFlag) Type() string {
 }
 
 // BuildArtifacts returns the Build Artifacts in the BuildOutputFileFlag
-func (t *BuildOutputFileFlag) BuildArtifacts() []Artifact {
+func (t *BuildOutputFileFlag) BuildArtifacts() []BuildArtifact {
 	return t.buildOutput.Builds
 }
 
