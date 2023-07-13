@@ -17,7 +17,6 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sLabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/kustomize/kyaml/kio"
@@ -28,7 +27,7 @@ import (
 // File struct represents the skaffold file
 type File struct {
 	Path   string
-	Config *latestV2.SkaffoldConfig
+	Config *SkaffoldConfig
 }
 
 // FilterPrefix returns a function that filters files that start with the given prefix.
@@ -105,7 +104,7 @@ func LoadSkaffoldConfigs(log logr.Logger, searchPath string, selector *v1alpha1.
 				}
 			}
 
-			config := &latestV2.SkaffoldConfig{}
+			config := &SkaffoldConfig{}
 			if err := resource.YNode().Decode(config); err != nil {
 				return operand, errors.Wrapf(err, "could not decode file %v as SkaffoldConfig", f)
 			}
@@ -126,7 +125,7 @@ func LoadSkaffoldConfigs(log logr.Logger, searchPath string, selector *v1alpha1.
 }
 
 // ChangeRegistry changes the registry of all images in the specified config to the supplied registry
-func ChangeRegistry(config *latestV2.SkaffoldConfig, registry string) error {
+func ChangeRegistry(config *SkaffoldConfig, registry string) error {
 	if registry == "" {
 		return nil
 	}
