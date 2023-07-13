@@ -15,16 +15,7 @@ replace (
 
 )
 
-exclude (
-	// These are excluded to match what skaffold is doing.
-	// I think the docker library is not maintaining compabilitiy (guessing thats what the incompatible flag means)
-	// So we need to use whatever version skaffold is using.
-	github.com/docker/docker v23.0.1+incompatible
-	github.com/docker/docker v24.0.4+incompatible
-)
-
 require (
-	github.com/GoogleContainerTools/skaffold v1.39.15
 	github.com/aws/aws-sdk-go v1.44.248
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
 	github.com/ghodss/yaml v1.0.0
@@ -98,7 +89,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.35.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.1 // indirect
-	github.com/GoogleContainerTools/skaffold/v2 v2.3.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Microsoft/hcsshim v0.10.0-rc.7 // indirect
