@@ -1,8 +1,6 @@
 package app
 
 import (
-	"io"
-
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
@@ -45,12 +43,12 @@ type App struct {
 // for the secrets. So this is a helper function to convert our values into githubapp.Config which
 // can be passed to those libraries.
 func BuildConfig(appId int64, webhookSecret string, privateKeySecret string) (*githubapp.Config, error) {
-	hmacSecret, err := readSecret(webhookSecret)
+	hmacSecret, err := files.Read(webhookSecret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error reading webhook secret %s", webhookSecret)
 	}
 
-	privateKey, err := readSecret(privateKeySecret)
+	privateKey, err := files.Read(privateKeySecret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error reading private key %s", privateKeySecret)
 	}
@@ -65,17 +63,4 @@ func BuildConfig(appId int64, webhookSecret string, privateKeySecret string) (*g
 		},
 	}
 	return config, nil
-}
-
-func readSecret(secret string) ([]byte, error) {
-	f := &files.Factory{}
-	h, err := f.Get(secret)
-	if err != nil {
-		return nil, err
-	}
-	r, err := h.NewReader(secret)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(r)
 }

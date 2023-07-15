@@ -29,16 +29,7 @@ func NewAppTokenCmd(w io.Writer, level *string, devLogger *bool) *cobra.Command 
 		Run: func(cmd *cobra.Command, args []string) {
 			log := util.SetupLogger(*level, *devLogger)
 			err := func() error {
-				f := &files.Factory{}
-				h, err := f.Get(secret)
-				if err != nil {
-					return err
-				}
-				r, err := h.NewReader(secret)
-				if err != nil {
-					return err
-				}
-				secretByte, err := io.ReadAll(r)
+				secretByte, err := files.Read(secret)
 				if err != nil {
 					return err
 				}

@@ -1,7 +1,6 @@
 package gitops
 
 import (
-	"io"
 	"os"
 	"testing"
 
@@ -15,19 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func readSecret(secret string) ([]byte, error) {
-	f := &files.Factory{}
-	h, err := f.Get(secret)
-	if err != nil {
-		return nil, err
-	}
-	r, err := h.NewReader(secret)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(r)
-}
-
 // This is a manual E2E test mainly intended for development.
 func Test_RendererManualE2E(t *testing.T) {
 	if os.Getenv("GITHUB_ACTIONS") != "" {
@@ -38,7 +24,7 @@ func Test_RendererManualE2E(t *testing.T) {
 		util.SetupLogger("info", true)
 		log := zapr.NewLogger(zap.L())
 		secretURI := "gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest"
-		secret, err := readSecret(secretURI)
+		secret, err := files.Read(secretURI)
 		if err != nil {
 			return errors.Wrapf(err, "Could not read file: %v", secretURI)
 		}

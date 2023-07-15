@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/files"
+
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/gregjones/httpcache"
@@ -28,7 +30,7 @@ func Test_HookManual(t *testing.T) {
 
 	log := util.SetupLogger("debug", true)
 	secretURI := "gcpSecretManager:///projects/chat-lewi/secrets/hydros-jlewi/versions/latest"
-	secret, err := readSecret(secretURI)
+	secret, err := files.Read(secretURI)
 	if err != nil {
 		t.Fatalf("Could not read file: %v; error: %+v", secretURI, err)
 	}

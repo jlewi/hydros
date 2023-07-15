@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -53,23 +52,10 @@ func NewTakeOverCmd() *cobra.Command {
 	return cmd
 }
 
-func readSecret(secret string) ([]byte, error) {
-	f := &files.Factory{}
-	h, err := f.Get(secret)
-	if err != nil {
-		return nil, err
-	}
-	r, err := h.NewReader(secret)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(r)
-}
-
 func TakeOver(args *TakeOverArgs) error {
 	log := zapr.NewLogger(zap.L())
 
-	secret, err := readSecret(args.Secret)
+	secret, err := files.Read(args.Secret)
 	if err != nil {
 		return errors.Wrapf(err, "Could not read file: %v", args.Secret)
 	}
