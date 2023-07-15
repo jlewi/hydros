@@ -4,7 +4,10 @@ PROJECT := chat-lewi
 build-dir:
 	mkdir -p .build
 
-build-go: build-dir
+# TODO(jeremy): Get rid of this rule
+build-go: build
+
+build: build-dir
 	CGO_ENABLED=0 go build -o .build/hydros github.com/jlewi/hydros/cmd
 
 tidy-go:
@@ -19,7 +22,10 @@ lint-go:
 
 lint: lint-go
 
-test-go:
+# TODO(jeremy): get rid of this rule
+test-go: test
+
+test:	
 	go test -v ./...
 
 build-image-submit:
