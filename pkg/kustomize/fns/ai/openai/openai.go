@@ -1,7 +1,6 @@
 package openai
 
 import (
-	"io"
 	"os"
 	"path"
 
@@ -22,7 +21,7 @@ func GetAPIKey() string {
 
 	uri := os.Getenv("OPENAI_API_KEY_URI")
 	if uri != "" {
-		key, err := readSecret(uri)
+		key, err := files.Read(uri)
 		if err == nil && len(key) > 0 {
 			log.Info("Obtained OpenAI API Key from URI specified in environment variable OPENAI_API_KEY_URI", "uri", uri)
 			return string(key)
@@ -41,7 +40,7 @@ func GetAPIKey() string {
 
 	for _, f := range filesToTry {
 		log.Info("Trying to load API key from uri", "file", f)
-		key, err := readSecret(f)
+		key, err := files.Read(f)
 		if err != nil {
 			log.Info("Failed to read URI", "uri", f, "err", err)
 			continue
@@ -53,17 +52,4 @@ func GetAPIKey() string {
 	}
 	log.Info("Failed to find API key")
 	return ""
-}
-
-func readSecret(secret string) ([]byte, error) {
-	f := &files.Factory{}
-	h, err := f.Get(secret)
-	if err != nil {
-		return nil, err
-	}
-	r, err := h.NewReader(secret)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(r)
 }

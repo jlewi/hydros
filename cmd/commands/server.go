@@ -4,6 +4,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/files"
+
 	"github.com/go-logr/zapr"
 	"github.com/gregjones/httpcache"
 	"github.com/jlewi/hydros/pkg/app"
@@ -69,7 +71,7 @@ func run(baseHREF string, port int, webhookSecret string, privateKeySecret strin
 		return errors.Wrapf(err, "Error creating client creator")
 	}
 
-	secret, err := readSecret(privateKeySecret)
+	secret, err := files.Read(privateKeySecret)
 	if err != nil {
 		return errors.Wrapf(err, "Could not read secret: %v", privateKeySecret)
 	}

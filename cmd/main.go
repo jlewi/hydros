@@ -211,19 +211,6 @@ func newVersionCmd(w io.Writer) *cobra.Command {
 	return cmd
 }
 
-func readSecret(secret string) ([]byte, error) {
-	f := &files.Factory{}
-	h, err := f.Get(secret)
-	if err != nil {
-		return nil, err
-	}
-	r, err := h.NewReader(secret)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(r)
-}
-
 func apply(a applyOptions, path string, syncNames map[string]string) error {
 	log.Info("Reading file", "path", path)
 	rNodes, err := util.ReadYaml(path)
@@ -259,7 +246,7 @@ func apply(a applyOptions, path string, syncNames map[string]string) error {
 			}
 			syncNames[name] = path
 
-			secret, err := readSecret(aOptions.secret)
+			secret, err := files.Read(aOptions.secret)
 			if err != nil {
 				return errors.Wrapf(err, "Could not read file: %v", aOptions.secret)
 			}
