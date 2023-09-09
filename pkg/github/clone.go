@@ -68,7 +68,7 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string, branch string) 
 		}
 	}
 
-	fullDir := filepath.Join(r.BaseDir, org, repo)
+	fullDir := filepath.Join(r.BaseDir, u.Hostname(), org, repo)
 
 	log.Info("Clone configured", "url", url, "appAuth", appAuth, "dir", fullDir)
 

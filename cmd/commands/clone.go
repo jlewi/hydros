@@ -42,7 +42,7 @@ func NewCloneCmd() *cobra.Command {
 				cloner := github.ReposCloner{
 					URIs:    repo,
 					Manager: manager,
-					BaseDir: "",
+					BaseDir: workDir,
 				}
 
 				return cloner.Run(context.TODO())

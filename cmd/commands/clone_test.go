@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -21,6 +22,7 @@ func Test_CloneCmd(t *testing.T) {
 		t.Fatalf("Failed to create temporary directory; %v", err)
 	}
 
+	// TODO(jeremy): We should be using the root command but that requires refactoring the code to make it testable.
 	cmd := NewCloneCmd()
 
 	cmd.SetArgs([]string{
@@ -31,5 +33,10 @@ func Test_CloneCmd(t *testing.T) {
 	})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Failed to run clone; error %v", err)
+	}
+
+	outDir := filepath.Join(tDir, "github.com/sailplaneai/roboweb")
+	if _, err := os.Stat(outDir); err != nil {
+		t.Fatalf("Failed to find cloned repo; error %v", err)
 	}
 }
