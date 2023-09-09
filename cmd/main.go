@@ -56,6 +56,8 @@ type tagOptions struct {
 	image    string
 }
 
+// TODO(jeremy): We should finish refactoring these commands to use the pattern of having functions create the commands
+// and not doing it init. And also having one file per command.
 var (
 	log      logr.Logger
 	gOptions = globalOptions{}
@@ -179,6 +181,7 @@ func init() {
 	rootCmd.AddCommand(commands.NewTakeOverCmd())
 	rootCmd.AddCommand(commands.NewGenerateCmd())
 	rootCmd.AddCommand(commands.NewHydrosServerCmd())
+	rootCmd.AddCommand(commands.NewCloneCmd())
 
 	rootCmd.PersistentFlags().BoolVar(&gOptions.devLogger, "dev-logger", false, "If true configure the logger for development; i.e. non-json output")
 	rootCmd.PersistentFlags().StringVarP(&gOptions.level, "log-level", "", "info", "Log level: error info or debug")
