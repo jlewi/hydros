@@ -2,10 +2,11 @@ package github
 
 import (
 	"context"
-	"github.com/jlewi/hydros/pkg/files"
-	"github.com/jlewi/hydros/pkg/util"
 	"os"
 	"testing"
+
+	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 const (

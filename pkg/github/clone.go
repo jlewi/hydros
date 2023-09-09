@@ -3,15 +3,16 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"net/url"
-	"os"
-	"path/filepath"
 )
 
 // ReposCloner clones a set of repositories

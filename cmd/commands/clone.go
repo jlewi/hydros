@@ -3,12 +3,13 @@ package commands
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"strings"
 )
 
 // NewCloneCmd create a clone command
