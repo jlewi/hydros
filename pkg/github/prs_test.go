@@ -40,6 +40,7 @@ func getTransportManager() (*TransportManager, error) {
 
 	hydrosKeyFile := filepath.Join(home, privateKey)
 
+	// TODO(jeremy): Use files.Read
 	f := &files.Factory{}
 	h, err := f.Get(privateKey)
 	if err != nil {
