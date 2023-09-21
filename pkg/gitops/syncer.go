@@ -3,7 +3,6 @@ package gitops
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -1192,7 +1191,7 @@ func (s *Syncer) buildImages(sourcePath string, sourceCommit string) error {
 
 		if missingImages {
 			// Since the skaffold config could have been modified to change the registry we need to write it back out
-			f, err := ioutil.TempFile("", "skaffold.*.yaml")
+			f, err := os.CreateTemp("", "skaffold.*.yaml")
 
 			newFile := f.Name()
 
