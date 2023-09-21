@@ -3,7 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -150,7 +150,7 @@ func (f *Proxy) forwardToGithub(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to read response")
 		}

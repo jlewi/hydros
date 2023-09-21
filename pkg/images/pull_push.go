@@ -2,7 +2,6 @@ package images
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -192,7 +191,7 @@ func uploadImage(imagePath string, targetURI string) error {
 
 // ParseImageList attempts to initialize an ImageList object from the supplied path
 func ParseImageList(imageListPath string) (imageList v1alpha1.ImageList, err error) {
-	data, err := ioutil.ReadFile(imageListPath)
+	data, err := os.ReadFile(imageListPath)
 	if err != nil {
 		return imageList, err
 	}

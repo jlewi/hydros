@@ -59,6 +59,11 @@ func isValidFnKind(category string) bool {
 	return valid
 }
 
+// RegisterFilter registers a function with the dispatcher
+func RegisterFilter(kind string, fn func() kio.Filter) {
+	dispatchTable[kind] = fn
+}
+
 // SkipBadRead tries to read a file and returns true if there is an error,
 // false otherwise. Used with kio.LocalPackageReader to skip yaml files that
 // aren't parsable by kustomize.

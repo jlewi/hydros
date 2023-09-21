@@ -226,10 +226,10 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) (*api.PullReque
 			log.Error(cErr, "Failed to compile regex; could not check if err is PR exists", "graphErr", graphErr)
 			return nil, err
 		}
+		// Check if any of the errors indicate an existing PR
 		for _, gErr := range graphErr.Errors {
 			if !matcher.MatchString(gErr.Message) {
-				h.log.Error(err, "There was a problem creating the PR,")
-				return nil, err
+				continue
 			}
 			h.log.Info(gErr.Message)
 
@@ -253,7 +253,16 @@ func (h *RepoHelper) CreatePr(prMessage string, labels []string) (*api.PullReque
 				URL:    existingPR.URL,
 				Number: existingPR.Number,
 			}
+
+			// TODO(jeremy) This is a "lint bug"; We are terminating the loop unconditionally so we will never check
+			// more than the first error
 			return pr, nil
+		}
+
+		if len(graphErr.Errors) > 0 {
+			// If we reached here and graphErr.Errors isn't empty then we have an error other than PR already exists
+			h.log.Error(err, "There was a problem creating the PR.")
+			return nil, err
 		}
 	}
 	h.log.Info("Created PR", "url", pr.URL)
