@@ -49,7 +49,7 @@ func (t *BuildOutputFileFlag) Set(value string) error {
 		if _, err := os.Stat(value); os.IsNotExist(err) {
 			return err
 		}
-		buf, err = ioutil.ReadFile(value)
+		buf, err = os.ReadFile(value)
 	}
 	if err != nil {
 		return err

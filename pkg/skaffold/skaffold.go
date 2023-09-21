@@ -182,7 +182,7 @@ func RunBuild(skaffoldFile string, buildDir string, tags []string, sess *session
 	}
 
 	// TODO(jeremy): Really need to accumulate errors and check no errors occurred.
-	data, err := ioutil.ReadFile(outFile)
+	data, err := os.ReadFile(outFile)
 	if err != nil {
 		return errors.Wrapf(err, "Could not open skaffold output file; %v", outFile)
 	}

@@ -1324,7 +1324,7 @@ func findKustomizationFiles(root string, repoRoot string, excludes []string, log
 
 // readKustomization will read a kustomization.yaml and return the kustomize object
 func readKustomization(kfDefFile string) (*kustomize.Kustomization, error) {
-	data, err := ioutil.ReadFile(kfDefFile)
+	data, err := os.ReadFile(kfDefFile)
 	if err != nil {
 		return nil, err
 	}
