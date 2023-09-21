@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,7 +16,7 @@ import (
 
 // Load reads s3 assets from an S3AssetsList yaml file.
 func Load(assetsFile string) ([]string, error) {
-	data, err := ioutil.ReadFile(assetsFile)
+	data, err := os.ReadFile(assetsFile)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +396,7 @@ func (m *uploadManager) Run(asset string) (err error) {
 	}
 	fmt.Printf("Uploading %s\n", asset)
 	sPath := s3.Path{Bucket: m.Bucket, Key: asset}
-	bytes, err := ioutil.ReadFile(filepath.Join(m.absAssetDir, asset))
+	bytes, err := os.ReadFile(filepath.Join(m.absAssetDir, asset))
 	if err != nil {
 		m.err = err
 		return

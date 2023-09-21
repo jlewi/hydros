@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -51,7 +50,7 @@ func Test_kustomizations(t *testing.T) {
 			t.Errorf("Files should be listed in sorted order in the configMapGenerator in %v;\nGot: %v,\nWant: %v\nDiff: %v", kustomizeFile, actual, want, d)
 		}
 
-		files, err := ioutil.ReadDir(d)
+		files, err := os.ReadDir(d)
 		if err != nil {
 			t.Errorf("Failed to readDir: %v", d)
 			continue
@@ -116,7 +115,7 @@ func Test_build(t *testing.T) {
 // Test_ValidManifestSync validates the manifestsyncs
 func Test_ValidManifestSync(t *testing.T) {
 	for _, d := range testDirs {
-		files, err := ioutil.ReadDir(d)
+		files, err := os.ReadDir(d)
 		if err != nil {
 			if os.IsNotExist(err) {
 				t.Logf("Directory %v doesn't exist; test skipped", d)

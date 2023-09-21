@@ -1,7 +1,6 @@
 package kustomize
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -38,7 +37,7 @@ func Test_runOnDir(t *testing.T) {
 	sourceDir := path.Join(testDir, "source")
 
 	// Create a temporary directory because the function will modify the directory.
-	outDir, err := ioutil.TempDir("", "runOnDir")
+	outDir, err := os.MkdirTemp("", "runOnDir")
 	if err != nil {
 		t.Errorf("Failed to create temporary directory; %v", err)
 		return
@@ -71,7 +70,7 @@ func Test_runOnDir(t *testing.T) {
 
 	for _, n := range names {
 		p := path.Join(outDir, n)
-		actualB, err := ioutil.ReadFile(p)
+		actualB, err := os.ReadFile(p)
 		if err != nil {
 			t.Errorf("Failed to read file: %v; error %v", p, err)
 			continue
@@ -82,7 +81,7 @@ func Test_runOnDir(t *testing.T) {
 		}
 
 		ePath := path.Join(testDir, "expected", n)
-		expectedB, err := ioutil.ReadFile(ePath)
+		expectedB, err := os.ReadFile(ePath)
 		if err != nil {
 			t.Errorf("Failed to read file: %v; error %v", ePath, err)
 			continue

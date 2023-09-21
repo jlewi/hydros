@@ -1,7 +1,6 @@
 package s3assets
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,7 +54,7 @@ func (s *S3IOTestSuite) TestMakeLocalWriter() {
 		},
 	}
 	for name, tc := range testCases {
-		dir, err := ioutil.TempDir(".", "localWriterTest")
+		dir, err := os.MkdirTemp(".", "localWriterTest")
 		s.Assert().NoError(err, "Error making tmp dir", name)
 
 		tc.setup(dir, tc.testPath)

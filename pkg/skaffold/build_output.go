@@ -5,7 +5,7 @@ package skaffold
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -44,12 +44,12 @@ func (t *BuildOutputFileFlag) Set(value string) error {
 	)
 
 	if value == "-" {
-		buf, err = ioutil.ReadAll(os.Stdin)
+		buf, err = io.ReadAll(os.Stdin)
 	} else {
 		if _, err := os.Stat(value); os.IsNotExist(err) {
 			return err
 		}
-		buf, err = ioutil.ReadFile(value)
+		buf, err = os.ReadFile(value)
 	}
 	if err != nil {
 		return err

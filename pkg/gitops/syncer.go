@@ -3,7 +3,6 @@ package gitops
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -99,7 +98,7 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 	}
 	s.log.Info("Creating NewSyncer", "manifest", m)
 	if s.workDir == "" {
-		newDir, err := ioutil.TempDir("", "manifestSync")
+		newDir, err := os.MkdirTemp("", "manifestSync")
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create a temporary working directorry")
 		}
@@ -1192,7 +1191,7 @@ func (s *Syncer) buildImages(sourcePath string, sourceCommit string) error {
 
 		if missingImages {
 			// Since the skaffold config could have been modified to change the registry we need to write it back out
-			f, err := ioutil.TempFile("", "skaffold.*.yaml")
+			f, err := os.CreateTemp("", "skaffold.*.yaml")
 
 			newFile := f.Name()
 
@@ -1324,7 +1323,7 @@ func findKustomizationFiles(root string, repoRoot string, excludes []string, log
 
 // readKustomization will read a kustomization.yaml and return the kustomize object
 func readKustomization(kfDefFile string) (*kustomize.Kustomization, error) {
-	data, err := ioutil.ReadFile(kfDefFile)
+	data, err := os.ReadFile(kfDefFile)
 	if err != nil {
 		return nil, err
 	}
