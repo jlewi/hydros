@@ -1,7 +1,6 @@
 package util
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,7 +28,7 @@ func Test_FindYamlFiles(t *testing.T) {
 		new("some/path/source.yaml", "some/otherpath/link.yaml"),
 	}
 
-	baseDir, err := ioutil.TempDir("", "FindYamlFiles")
+	baseDir, err := os.MkdirTemp("", "FindYamlFiles")
 	t.Logf("Base Dir: %v", baseDir)
 	if err != nil {
 		t.Fatalf("Failed to create tempdir; %v", err)

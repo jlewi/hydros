@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -216,7 +215,7 @@ func (s *Sanitizer) cleanFile(path string, dest string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to stat file; %v", path)
 	}
-	err = ioutil.WriteFile(dest, []byte(strings.Join(cleaned, "\n")), finfo.Mode())
+	err = os.WriteFile(dest, []byte(strings.Join(cleaned, "\n")), finfo.Mode())
 	if err != nil {
 		return errors.Wrapf(err, "Failed to write file; %v", path)
 	}

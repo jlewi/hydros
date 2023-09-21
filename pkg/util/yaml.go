@@ -3,7 +3,6 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +18,7 @@ import (
 // ReadYaml reads the specified path and returns an RNode.
 // This is useful for filtering by KRM type.
 func ReadYaml(path string) ([]*yaml.RNode, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error reading path %v", path)
 	}
