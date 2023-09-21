@@ -1,7 +1,6 @@
 package gitutil
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,7 +40,7 @@ func Test_LocateRoot(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			outDir, err := ioutil.TempDir("", "LocateRoot")
+			outDir, err := os.MkdirTemp("", "LocateRoot")
 			if err != nil {
 				t.Errorf("Failed to create temporary directory; %v", err)
 				return

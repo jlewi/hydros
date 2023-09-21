@@ -2,7 +2,6 @@ package skaffold
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -151,7 +150,7 @@ func RunBuild(skaffoldFile string, buildDir string, tags []string, sess *session
 		Log: log,
 	}
 
-	dir, err := ioutil.TempDir("", "hydrosSkaffoldBuild")
+	dir, err := os.MkdirTemp("", "hydrosSkaffoldBuild")
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create temporary directory for skaffold")
 	}

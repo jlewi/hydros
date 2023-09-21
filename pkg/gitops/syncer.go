@@ -99,7 +99,7 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 	}
 	s.log.Info("Creating NewSyncer", "manifest", m)
 	if s.workDir == "" {
-		newDir, err := ioutil.TempDir("", "manifestSync")
+		newDir, err := os.MkdirTemp("", "manifestSync")
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create a temporary working directorry")
 		}
