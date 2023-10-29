@@ -9,10 +9,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// TODO(jeremy):
-
 func NewGenerateCmd() *cobra.Command {
 	var functionPath string
+	// TODO(jeremy): This is a bug.  We aren't setting the function path.
 	cmd := &cobra.Command{
 		Use:   "generate -f hydros_ai.yaml  <config directory>",
 		Short: "Use OpenAI to generate KRM functions from NL descriptions in ai.hydros.io/${TAG} annotations",
