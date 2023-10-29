@@ -30,14 +30,14 @@ func (r *ReposCloner) Run(ctx context.Context) error {
 	// loop over the repos and clone them
 	for _, uri := range r.URIs {
 		// TODO(jeremy): Make the branch configrable
-		if err := r.cloneRepo(ctx, uri, "main"); err != nil {
+		if err := r.cloneRepo(ctx, uri); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *ReposCloner) cloneRepo(ctx context.Context, uri string, branch string) error {
+func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 	log := zapr.NewLogger(zap.L())
 
 	u, err := url.Parse(uri)
@@ -47,6 +47,14 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string, branch string) 
 	orgRepo, err := ghrepo.FromURL(u)
 	if err != nil {
 		return errors.Wrapf(err, "Could not parse URI %v", uri)
+	}
+
+	// ref parameter specifies the reference to checkout
+	// https://github.com/hashicorp/go-getter#protocol-specific-options
+	branch := u.Query().Get("ref")
+	if branch == "" {
+		// Default to main
+		branch = "main"
 	}
 
 	org := orgRepo.RepoOwner()
