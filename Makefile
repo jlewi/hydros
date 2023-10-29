@@ -33,7 +33,7 @@ test:
 # This is much faster
 # TODO(jeremy): Get rid of GCB builds
 build-ko-image:
-	KO_DOCKER_REPO=us-west1-docker.pkg.dev/dev-sailplane/images/hydros && \
+	KO_DOCKER_REPO=us-west1-docker.pkg.dev/dev-sailplane/images/hydros \
 		ko build --bare github.com/jlewi/hydros/cmd  
 
 build-image-submit:
