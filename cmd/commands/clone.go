@@ -3,7 +3,10 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/spf13/viper"
 
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/files"
@@ -30,6 +33,10 @@ func NewCloneCmd() *cobra.Command {
 			err := func() error {
 				log := zapr.NewLogger(zap.L())
 
+				if err := InitViper(cmd); err != nil {
+					return err
+				}
+				config := GetConfig()
 				privateKey, err := files.Read(privateKeyFile)
 				if err != nil {
 					return err
@@ -40,7 +47,7 @@ func NewCloneCmd() *cobra.Command {
 				}
 
 				cloner := github.ReposCloner{
-					URIs:    repo,
+					URIs:    config.Repos,
 					Manager: manager,
 					BaseDir: workDir,
 				}
@@ -49,6 +56,7 @@ func NewCloneCmd() *cobra.Command {
 			}()
 			if err != nil {
 				fmt.Printf("clone failed; error %+v\n", err)
+				os.Exit(1)
 			}
 		},
 	}
@@ -60,4 +68,52 @@ func NewCloneCmd() *cobra.Command {
 	cmd.Flags().Int64VarP(&appID, "app-id", "", 0, "GitHubAppId.")
 
 	return cmd
+}
+
+type CloneConfig struct {
+	Repos []string `json:"repos" yaml:"repos"`
+}
+
+// InitViper reads in config file and ENV variables if set.
+// The results are stored inside viper. Call GetConfig to get a configuration.
+// The cmd is passed in so we can bind to command flags
+func InitViper(cmd *cobra.Command) error {
+	// TODO(jeremy): Should we be setting defaults?
+	// see https://github.com/spf13/viper#establishing-defaults
+	viper.SetEnvPrefix("hydros")
+
+	// TODO(jeremy): Automic env doesn't seem to be working as expected. We should be able to set the environment
+	// variables to override the keys but that doesn't seem to be working.
+	viper.AutomaticEnv() // read in environment variables that match
+
+	if err := viper.BindEnv("repos", "GIT_REPOS"); err != nil {
+		return err
+	}
+
+	// Bind to the command line flag if it was specified.
+	keyToflagName := map[string]string{
+		"repos": "repo",
+	}
+
+	if cmd != nil {
+		for key, flag := range keyToflagName {
+			if err := viper.BindPFlag(key, cmd.Flags().Lookup(flag)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetConfig returns the configuration instantiated from the viper configuration.
+func GetConfig() *CloneConfig {
+	// N.B. THis is a bit of a hacky way to load the configuration while allowing values to be overwritten by viper
+	cfg := &CloneConfig{}
+
+	if err := viper.Unmarshal(cfg); err != nil {
+		panic(fmt.Errorf("Failed to unmarshal configuration; error %v", err))
+	}
+
+	return cfg
 }
