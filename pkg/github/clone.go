@@ -49,12 +49,22 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 		return errors.Wrapf(err, "Could not parse URI %v", uri)
 	}
 
+	// sha parameter specifies the commit to checkout
+	sha := u.Query().Get("sha")
+
 	// ref parameter specifies the reference to checkout
 	// https://github.com/hashicorp/go-getter#protocol-specific-options
 	branch := u.Query().Get("ref")
-	if branch == "" {
+
+	if branch != "" && sha != "" {
+		log.Info("branch and sha are both specified; branch will be ignored", "branch", branch, "sha", sha)
+		branch = ""
+	}
+
+	if sha == "" && branch == "" {
 		// Default to main
 		branch = "main"
+		log.Info("neither branch nor sha are specified; setting default branch", "branch", branch)
 	}
 
 	org := orgRepo.RepoOwner()
@@ -165,18 +175,20 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 		}
 	}
 
-	plumbingRef := plumbing.NewRemoteReferenceName(remote, branch)
-
 	//fullBranch := plumbing.ReferenceName(branchRef)
 	checkoutOptions := &git.CheckoutOptions{
-		Branch: plumbingRef,
 		Force:  dropChanges,
 		Create: false,
-		// TODO(jeremy): We should probably check out a specific commit; e.g. a PR review will be triggered on a commit.
-		//Hash: baseRef.Hash(),
 	}
 
-	log.Info("Checking out branch", "name", branch)
+	if sha != "" {
+		checkoutOptions.Hash = plumbing.NewHash(sha)
+	} else {
+		checkoutOptions.Branch = plumbing.NewRemoteReferenceName(remote, branch)
+	}
+
+	log.Info("Checking out code", "branch", branch, "sha", sha)
+
 	err = w.Checkout(checkoutOptions)
 
 	if err != nil {
