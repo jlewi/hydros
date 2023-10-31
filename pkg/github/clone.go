@@ -182,7 +182,12 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 	}
 
 	if sha != "" {
-		checkoutOptions.Hash = plumbing.NewHash(sha)
+		// Resolve the short hash to a full hash (SHA-1).
+		fullSha, err := gitRepo.ResolveRevision(plumbing.Revision(sha))
+		if err != nil {
+			log.Error(err, "Failed to resolve revision", "sha", sha)
+		}
+		checkoutOptions.Hash = *fullSha
 	} else {
 		checkoutOptions.Branch = plumbing.NewRemoteReferenceName(remote, branch)
 	}

@@ -62,18 +62,22 @@ func Test_CloneCmd(t *testing.T) {
 	}
 
 	type testCase struct {
-		repo string
+		repo   string
+		outDir string
 	}
 
 	cases := []testCase{
 		{
-			repo: "https://github.com/sailplaneai/roboweb.git",
+			repo:   "https://github.com/sailplaneai/roboweb.git",
+			outDir: "sailplaneai/roboweb",
 		},
 		{
-			repo: "https://github.com/sailplaneai/roboweb.git?ref=jlewi/cicd",
+			repo:   "https://github.com/sailplaneai/roboweb.git?ref=jlewi/cicd",
+			outDir: "sailplaneai/roboweb",
 		},
 		{
-			repo: "https://github.com/sailplaneai/roboweb.git?sha=8d91bcb",
+			repo:   "https://github.com/sailplaneai/kubepilot?sha=9fa5bc0",
+			outDir: "sailplaneai/kubepilot",
 		},
 	}
 
@@ -97,7 +101,7 @@ func Test_CloneCmd(t *testing.T) {
 				t.Fatalf("Failed to run clone; error %v", err)
 			}
 
-			outDir := filepath.Join(tDir, "github.com/sailplaneai/roboweb")
+			outDir := filepath.Join(tDir, "github.com", c.outDir)
 			if _, err := os.Stat(outDir); err != nil {
 				t.Fatalf("Failed to find cloned repo; error %v", err)
 			}
