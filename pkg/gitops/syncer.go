@@ -980,7 +980,7 @@ func (s *Syncer) resolveImageToSha(r util.DockerImageRef, strategy v1alpha1.Stra
 	return resolved, nil
 }
 
-// findImagesToPin searches the kustomzie files to find all images that might need to be pinned.
+// findImagesToPin searches the kustomize files to find all images that might need to be pinned.
 // Result is a mapping from docker images. Also returns a list of kustomization files that match the annotations
 // and should be hydrated.
 func (s *Syncer) findImagesToPin(kustomizeFiles []string) (map[util.DockerImageRef][]imageAndFile, []string, error) {
