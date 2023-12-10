@@ -55,7 +55,24 @@ func FromImageRef(r util.DockerImageRef) (ArtifactImage, error) {
 	return image, nil
 }
 
+func NewImageResolver(ctx context.Context) (*ImageResolver, error) {
+	// This snippet has been automatically generated and should be regarded as a code template only.
+	// It will require modifications to work:
+	// - It may require correct/in-range values for request initialization.
+	// - It may require specifying regional endpoints when creating the service client as shown in:
+	//   https://pkg.go.dev/cloud.google.com/go#hdr-Client_Options
+	c, err := artifactregistry.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ImageResolver{
+		client: c,
+	}, nil
+}
+
 type ImageResolver struct {
+	client *artifactregistry.Client
 }
 
 func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1alpha1.Strategy) (util.DockerImageRef, error) {
@@ -68,25 +85,13 @@ func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1al
 		return ref, err
 	}
 
-	ctx := context.Background()
-	// This snippet has been automatically generated and should be regarded as a code template only.
-	// It will require modifications to work:
-	// - It may require correct/in-range values for request initialization.
-	// - It may require specifying regional endpoints when creating the service client as shown in:
-	//   https://pkg.go.dev/cloud.google.com/go#hdr-Client_Options
-	c, err := artifactregistry.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-	defer c.Close()
-
 	req := &artifactregistrypb.GetTagRequest{
 		Name: image.NameForTag(),
 	}
 
 	log := zapr.NewLogger(zap.L())
 	log.Info("Getting tag", "name", req.Name)
-	resp, err := c.GetTag(ctx, req)
+	resp, err := i.client.GetTag(context.Background(), req)
 	if err != nil {
 		return ref, err
 	}
@@ -97,4 +102,9 @@ func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1al
 	ref.Sha = pieces[len(pieces)-1]
 
 	return ref, err
+}
+
+// IsArtifactRegistry returns true if the URL is a valid artifact registry URL
+func IsArtifactRegistry(url string) bool {
+	return strings.HasSuffix(url, gcpRegistrySuffix)
 }
