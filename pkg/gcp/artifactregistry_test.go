@@ -42,7 +42,7 @@ func Test_DockerImageRefToArtifactImage(t *testing.T) {
 				Project:    "acme",
 				Location:   "us-west1",
 				Repository: "images",
-				Package:    "vscode/devbox",
+				Package:    "vscode%2Fdevbox",
 				Tag:        "prod",
 			},
 		},
@@ -70,9 +70,9 @@ func Test_ResolveImageToSHA(t *testing.T) {
 
 	ref := util.DockerImageRef{
 		Registry: "us-west1-docker.pkg.dev",
-		//Repo:     "dev-sailplane/images/vscode/webserver",
-		Repo: "dev-sailplane/images/hercules",
-		Tag:  "latest",
+		Repo:     "dev-sailplane/images/vscode/webserver",
+		//Repo: "dev-sailplane/images/hercules",
+		Tag: "latest",
 	}
 	strategy := v1alpha1.MutableTagStrategy
 	sha, err := r.ResolveImageToSha(ref, strategy)

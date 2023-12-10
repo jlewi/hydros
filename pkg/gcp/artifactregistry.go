@@ -10,6 +10,8 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/api/iterator"
+	"net/url"
 	"strings"
 )
 
@@ -49,7 +51,8 @@ func FromImageRef(r util.DockerImageRef) (ArtifactImage, error) {
 	image.Project = pieces[0]
 	// Second pieces is the repository name
 	image.Repository = pieces[1]
-	image.Package = strings.Join(pieces[2:], "/")
+	// If the docker image contains slashes these are query escaped
+	image.Package = url.QueryEscape(strings.Join(pieces[2:], "/"))
 	return image, nil
 }
 
@@ -77,6 +80,17 @@ func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1al
 		// TODO: Handle error.
 	}
 	defer c.Close()
+
+	lReq := &artifactregistrypb.ListDockerImagesRequest{}
+	lReq.Parent = fmt.Sprintf("projects/%s/locations/%s/repositories/%s", image.Project, image.Location, image.Repository)
+	iter := c.ListDockerImages(ctx, lReq)
+	for {
+		resp, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		fmt.Printf("Got image: %v\n", resp.GetName())
+	}
 
 	req := &artifactregistrypb.GetTagRequest{
 		Name: image.NameForTag(),
