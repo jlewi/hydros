@@ -3,6 +3,7 @@ package gitops
 import (
 	"context"
 	"fmt"
+	"github.com/jlewi/hydros/pkg/gcp"
 	"os"
 	"os/exec"
 	"path"
@@ -60,6 +61,9 @@ type Syncer struct {
 	imageStrategies map[util.DockerImageRef]v1alpha1.Strategy
 
 	selector *meta.LabelSelector
+
+	// Cache the Google Image Resolver
+	gcpImageResovler *gcp.ImageResolver
 }
 
 const (
@@ -928,6 +932,21 @@ func (s *Syncer) resetBranch(repoDir string) error {
 // If the image isn't found err will be an AwsError with code ecr.ErrCodeImageNotFoundException.
 // See http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html for example of how to process it.
 func (s *Syncer) resolveImageToSha(r util.DockerImageRef, strategy v1alpha1.Strategy) (util.DockerImageRef, error) {
+	log := s.log
+	if gcp.IsArtifactRegistry(r.Registry) {
+		if s.gcpImageResovler == nil {
+			log.Info("Creating GCP image resolver")
+			resolver, err := gcp.NewImageResolver(context.Background())
+			if err != nil {
+				return r, err
+			}
+			s.gcpImageResovler = resolver
+		}
+
+		return s.gcpImageResovler.ResolveImageToSha(r, strategy)
+	}
+
+	// Assume its ECR otherwise.
 	svc := ecr.New(s.sess)
 
 	resolved := r
@@ -980,7 +999,7 @@ func (s *Syncer) resolveImageToSha(r util.DockerImageRef, strategy v1alpha1.Stra
 	return resolved, nil
 }
 
-// findImagesToPin searches the kustomzie files to find all images that might need to be pinned.
+// findImagesToPin searches the kustomize files to find all images that might need to be pinned.
 // Result is a mapping from docker images. Also returns a list of kustomization files that match the annotations
 // and should be hydrated.
 func (s *Syncer) findImagesToPin(kustomizeFiles []string) (map[util.DockerImageRef][]imageAndFile, []string, error) {
@@ -988,6 +1007,7 @@ func (s *Syncer) findImagesToPin(kustomizeFiles []string) (map[util.DockerImageR
 	// Define some sets to look up the images to replace.
 	registrySet := map[string]bool{}
 
+	matchAllRegistries := s.manifest.Spec.ImageRegistries == nil
 	for _, i := range s.manifest.Spec.ImageRegistries {
 		registrySet[i] = true
 	}
@@ -1044,7 +1064,7 @@ func (s *Syncer) findImagesToPin(kustomizeFiles []string) (map[util.DockerImageR
 				log.Error(err, "Failed to parse image url", "image", url)
 			}
 
-			if _, ok := registrySet[r.Registry]; !ok {
+			if _, ok := registrySet[r.Registry]; !ok && !matchAllRegistries {
 				continue
 			}
 
