@@ -65,9 +65,16 @@ func TakeOver(args *TakeOverArgs) error {
 		return err
 	}
 
-	f, err := os.Open(args.File)
+	manifestPath, err := filepath.Abs(args.File)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open file: %v", args.File)
+		return errors.Wrapf(err, "Failed to get absolute path for %v", args.File)
+	}
+
+	log.Info("Resolved manifest path", "manifestPath", manifestPath)
+
+	f, err := os.Open(manifestPath)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open file: %v", manifestPath)
 	}
 
 	d := yaml.NewDecoder(f)
@@ -75,7 +82,7 @@ func TakeOver(args *TakeOverArgs) error {
 	m := &v1alpha1.ManifestSync{}
 
 	if err := d.Decode(m); err != nil {
-		return errors.Wrapf(err, "Failed to decode ManifestSync from file %v", args.File)
+		return errors.Wrapf(err, "Failed to decode ManifestSync from file %v", manifestPath)
 	}
 
 	syncer, err := gitops.NewSyncer(m, manager, gitops.SyncWithWorkDir(args.WorkDir), gitops.SyncWithLogger(log))
@@ -84,7 +91,7 @@ func TakeOver(args *TakeOverArgs) error {
 	}
 
 	if args.RepoDir == "" {
-		args.RepoDir = filepath.Dir(args.File)
+		args.RepoDir = filepath.Dir(manifestPath)
 		log.Info("RepoDir is using default", "repoDir", args.RepoDir)
 	}
 
