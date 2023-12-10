@@ -12,7 +12,8 @@ type DockerImageRef struct {
 	Registry string
 	Repo     string
 	Tag      string
-	Sha      string
+	// NB sha should be of the form "sha256:1234..." otherwise ToURL won't return a proper URL
+	Sha string
 }
 
 // ToURL returns the full image URL.

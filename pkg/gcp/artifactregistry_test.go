@@ -71,17 +71,17 @@ func Test_ResolveImageToSHA(t *testing.T) {
 	ref := util.DockerImageRef{
 		Registry: "us-west1-docker.pkg.dev",
 		Repo:     "dev-sailplane/images/vscode/webserver",
-		//Repo: "dev-sailplane/images/hercules",
-		Tag: "latest",
+		Tag:      "78eb2ca7-1690-4711-a97e-188d27866635",
 	}
+	expectedSha := "sha256:f2709b8a04f7ee03c7a1b5ce014e480b568661d7383dfbd9578ffca531c9184a"
 	strategy := v1alpha1.MutableTagStrategy
 	sha, err := r.ResolveImageToSha(ref, strategy)
 
 	if err != nil {
 		t.Fatalf("Error resolving image; %+v", err)
 	}
-	if sha.Sha == "" {
-		t.Fatalf("SHA is empty")
+	if sha.Sha != expectedSha {
+		t.Fatalf("SHA is incorrect; got %s; want %s", sha.Sha, expectedSha)
 	}
 
 }

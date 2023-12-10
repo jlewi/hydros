@@ -10,7 +10,6 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/api/iterator"
 	"net/url"
 	"strings"
 )
@@ -81,17 +80,6 @@ func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1al
 	}
 	defer c.Close()
 
-	lReq := &artifactregistrypb.ListDockerImagesRequest{}
-	lReq.Parent = fmt.Sprintf("projects/%s/locations/%s/repositories/%s", image.Project, image.Location, image.Repository)
-	iter := c.ListDockerImages(ctx, lReq)
-	for {
-		resp, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		fmt.Printf("Got image: %v\n", resp.GetName())
-	}
-
 	req := &artifactregistrypb.GetTagRequest{
 		Name: image.NameForTag(),
 	}
@@ -103,7 +91,10 @@ func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1al
 		return ref, err
 	}
 
-	ref.Sha = resp.GetVersion()
+	version := resp.GetVersion()
+
+	pieces := strings.Split(version, "/")
+	ref.Sha = pieces[len(pieces)-1]
 
 	return ref, err
 }
