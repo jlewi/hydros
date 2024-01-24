@@ -52,8 +52,10 @@ require (
 	cloud.google.com/go/cloudbuild v1.14.1
 	cloud.google.com/go/longrunning v0.5.2
 	cloud.google.com/go/secretmanager v1.11.2
+	cloud.google.com/go/storage v1.36.0
 	github.com/PrimerAI/go-micro-utils-public/gmu v0.0.0-20220526222947-c3eb3c2c79c8
 	github.com/PullRequestInc/go-gpt3 v1.1.15
+	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/cli/cli/v2 v2.20.2
 	github.com/cli/go-gh v0.1.3-0.20221102170023-e3ec45fb1d1b
 	github.com/go-git/go-git/v5 v5.6.1
@@ -77,7 +79,6 @@ require (
 	cloud.google.com/go/compute v1.23.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.3 // indirect
-	cloud.google.com/go/storage v1.36.0 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/sketches-go v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect

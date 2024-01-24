@@ -6,8 +6,11 @@ metadata:
 spec:
   source:
     - src: Dockerfile
-    - src: "**/*.go"
-      dest: src
+    # Specify individual directories so we don't include hidden directories
+    - src: "api/**/*.go"
+    - src: "cmd/**/*.go"
+    - src: "pkg/**/*.go"
+    - src: "test/**/*.go"
   builder:
     gcb:
       buildFile: cloudbuild.yaml

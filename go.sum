@@ -122,6 +122,8 @@ github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+Ce
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJmJgSg28kpZDP6UIiPt0e0Oz0kqKNGyRaWEPv84=
+github.com/bmatcuk/doublestar/v4 v4.6.1 h1:FH9SifrbvJhnlQpztAx++wlkk70QBf0iBWDwNy7PA4I=
+github.com/bmatcuk/doublestar/v4 v4.6.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/bradfitz/slice v0.0.0-20180809154707-2b758aa73013/go.mod h1:pccXHIvs3TV/TUqSNyEvF99sxjX2r4FFRIyw6TZY9+w=
 github.com/bradleyfalzon/ghinstallation/v2 v2.4.0 h1:zYSzkoIwekCQAr6GT6KxISLt4YRS6kd4/ixfzMN+7yc=
 github.com/bradleyfalzon/ghinstallation/v2 v2.4.0/go.mod h1:4MwZLSgBJJgg4i3nJwZJ95AMooSqN8fJDmegLVn9Q2U=
