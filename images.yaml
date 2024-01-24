@@ -1,0 +1,13 @@
+kind: Image
+apiVersion: hydros.sailplane.ai/v1alpha1
+metadata:
+  name: hydros
+  namespace: hydros
+spec:
+  source:
+    - src: Dockerfile
+    - src: "**/*.go"
+      dest: src
+  builder:
+    gcb:
+      buildFile: cloudbuild.yaml
