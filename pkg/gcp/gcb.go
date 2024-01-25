@@ -131,6 +131,7 @@ func WaitForBuild(ctx context.Context, client *cb.Client, project string, buildI
 	pause := 20 * time.Second
 
 	var last *cbpb.Build
+	logged := false
 	for time.Now().Before(deadline) {
 		req := cbpb.GetBuildRequest{
 			ProjectId: project,
@@ -156,6 +157,10 @@ func WaitForBuild(ctx context.Context, client *cb.Client, project string, buildI
 			}
 		}
 
+		if !logged && err == nil {
+			log.Info("Waiting for build", "buildId", buildId, "logsUrl", last.LogUrl)
+			logged = true
+		}
 		if time.Now().Add(pause).After(deadline) {
 			return last, err
 		}

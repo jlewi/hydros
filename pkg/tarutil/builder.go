@@ -1,4 +1,4 @@
-package tar
+package tarutil
 
 import (
 	"archive/tar"
@@ -35,14 +35,14 @@ func Build(image *v1alpha1.Image, basePath string, tarFilePath string) error {
 	}
 	defer util.MaybeClose(w)
 
-	// Create a new tar archive
+	// Create a new tarutil archive
 	log.Info("Creating tarball", "basePath", basePath, "tarFilePath", tarFilePath)
 
-	// If you want GZIP compression, wrap the tar writer in a gzip writer
+	// If you want GZIP compression, wrap the tarutil writer in a gzip writer
 	gzWriter := gzip.NewWriter(w)
 	defer gzWriter.Close()
 
-	// Create a tar writer
+	// Create a tarutil writer
 	tw := tar.NewWriter(gzWriter)
 	defer tw.Close()
 
@@ -89,7 +89,7 @@ func addFileToTarGenerator(tw *tar.Writer, basePath string, path string, strip s
 		return nil
 	}
 
-	// Create a tar header
+	// Create a tarutil header
 	header, err := tar.FileInfoHeader(info, fullPath)
 	if err != nil {
 		return err

@@ -55,6 +55,9 @@ type GCBConfig struct {
 	// e.g. 10m
 	Timeout string `yaml:"timeout,omitempty"`
 
+	// Bucket where to store the build logs
+	Bucket string `yaml:"bucket,omitempty"
+`
 	// MachineType is optional. If specified its the machine type to use for building.
 	// Increasing VCPU can increase build times but also comes with a provisioning
 	// delay since they are only started on demand (they are also more expensive).

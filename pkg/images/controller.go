@@ -4,10 +4,14 @@ import (
 	cb "cloud.google.com/go/cloudbuild/apiv1"
 	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	longrunning "cloud.google.com/go/longrunning/autogen"
+	"cloud.google.com/go/storage"
 	"context"
+	"fmt"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/gcp"
+	"github.com/jlewi/hydros/pkg/tarutil"
 	"github.com/jlewi/hydros/pkg/util"
+	"github.com/jlewi/monogo/gcp/gcs"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,6 +25,7 @@ type Controller struct {
 	resolver  *gcp.ImageResolver
 	cbClient  *cb.Client
 	opsClient *longrunning.OperationsClient
+	gcsClient *storage.Client
 }
 
 func NewController() (*Controller, error) {
@@ -40,23 +45,37 @@ func NewController() (*Controller, error) {
 		return nil, errors.Wrapf(err, "Failed to create Cloud Build client")
 	}
 
+	ctx := context.Background()
+	gcsClient, err := storage.NewClient(ctx)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create GCS storage client")
+	}
+
 	return &Controller{
 		resolver:  resolver,
 		opsClient: c,
 		cbClient:  client,
+		gcsClient: gcsClient,
 	}, nil
 }
 
 // Reconcile an image. This will build the image if necessary and resolve the image to a sha.
 // Status is updated with status about the image.
-func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error {
+// basePath is the basePath to resolve paths against
+func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, basePath string) error {
 	log := util.LogFromContext(ctx)
 	log.Info("Reconciling image", "image", image.Metadata.Name)
 
 	project := image.Spec.Builder.GCB.Project
+	bucket := image.Spec.Builder.GCB.Bucket
 
 	if project == "" {
 		return errors.New("Can't build image; project must be set")
+	}
+
+	if bucket == "" {
+		return errors.New("Can't build image; bucket must be set")
 	}
 
 	if image.Status.SourceCommit == "" {
@@ -91,6 +110,31 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 		return err
 	}
 
+	// Create the tarball
+	gcsPath := gcs.GcsPath{
+		Bucket: image.Spec.Builder.GCB.Bucket,
+		Path:   fmt.Sprintf("%s.%s.tgz", imageRef.Repo, image.Status.SourceCommit),
+	}
+
+	gcsHelper := gcs.GcsHelper{
+		Client: c.gcsClient,
+		Ctx:    ctx,
+	}
+
+	exists, err := gcsHelper.Exists(gcsPath.ToURI())
+	if err != nil {
+		return errors.Wrapf(err, "Failed to check if tarball exists %s", gcsPath.ToURI())
+	}
+	tarFilePath := gcsPath.ToURI()
+	if !exists {
+		log.Info("Creating tarball", "image", image.Spec.Image, "tarball", tarFilePath)
+		if err := tarutil.Build(image, basePath, tarFilePath); err != nil {
+			return errors.Wrapf(err, "Failed to create tarball %s", tarFilePath)
+		}
+	} else {
+		log.Info("Tarball exists", "image", image.Spec.Image, "tarball", tarFilePath)
+	}
+
 	log.Info("Image doesn't exist; building", "image", image.Spec.Image)
 
 	build := gcp.DefaultBuild()
@@ -101,6 +145,15 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 		imageBase + ":latest",
 	}
 	gcp.AddImages(build, images)
+
+	build.Source = &cbpb.Source{
+		Source: &cbpb.Source_StorageSource{
+			StorageSource: &cbpb.StorageSource{
+				Bucket: bucket,
+				Object: gcsPath.Path,
+			},
+		},
+	}
 
 	if image.Spec.Builder.GCB.MachineType != "" {
 		val, ok := cbpb.BuildOptions_MachineType_value[image.Spec.Builder.GCB.MachineType]

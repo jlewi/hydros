@@ -1,3 +1,5 @@
+# TODO(jeremy): This file should be obsolete if we are using hydros
+# It is effectively replaced by cloudbuild.yaml
 steps:
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:

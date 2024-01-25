@@ -71,7 +71,7 @@ func Test_Controller(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if err := c.Reconcile(ctx, image); err != nil {
+	if err := c.Reconcile(ctx, image, gitRoot); err != nil {
 		t.Fatalf("Error reconciling image %v", err)
 	}
 
