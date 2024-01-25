@@ -207,7 +207,7 @@ func newVersionCmd(w io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "version",
 		Short:   "Return version",
-		Example: `kap version`,
+		Example: `hydros version`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(w, "hydros %s, commit %s, built at %s by %s", version, commit, date, builtBy)
 		},

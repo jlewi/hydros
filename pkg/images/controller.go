@@ -150,12 +150,17 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	build := gcp.DefaultBuild()
 
 	imageBase := image.Spec.Image
+
+	now := time.Now()
+	version := now.Format("v20060102T150405")
 	images := []string{
 		imageBase + ":" + image.Status.SourceCommit,
 		imageBase + ":latest",
+		imageBase + ":" + version,
 	}
-	gcp.AddImages(build, images)
 
+	gcp.AddImages(build, images)
+	gcp.AddBuildTags(build, image.Status.SourceCommit, version)
 	build.Source = &cbpb.Source{
 		Source: &cbpb.Source_StorageSource{
 			StorageSource: &cbpb.StorageSource{
@@ -248,19 +253,23 @@ func ReconcileFile(path string) error {
 		return errors.Wrapf(err, "Error opening git repo")
 	}
 
+	w, err := gitRepo.Worktree()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting worktree")
+	}
+
+	if err := gitutil.AddGitignoreToWorktree(w, gitRoot); err != nil {
+		return errors.Wrapf(err, "Failed to add gitignore patterns")
+	}
+
 	// Commit any changes. Do this before calling headRef
-	if err := gitutil.CommitAll(gitRepo, gitRoot, "hydros committing changes before build"); err != nil {
+	if err := gitutil.CommitAll(gitRepo, w, "hydros committing changes before build"); err != nil {
 		return err
 	}
 
 	headRef, err := gitRepo.Head()
 	if err != nil {
 		return errors.Wrapf(err, "Error getting head ref")
-	}
-
-	w, err := gitRepo.Worktree()
-	if err != nil {
-		return errors.Wrapf(err, "Error getting worktree")
 	}
 
 	gitStatus, err := w.Status()
@@ -293,6 +302,7 @@ func ReconcileFile(path string) error {
 			log.Info("Git status is not clean; image will be tagged -dirty")
 			image.Status.SourceCommit += "-dirty"
 		}
+
 		ctx := context.Background()
 		if err := c.Reconcile(ctx, image, basePath); err != nil {
 			log.Error(err, "Failed to reconcile image", "image", image)
