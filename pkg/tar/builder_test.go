@@ -17,9 +17,6 @@ import (
 
 func Test_Build(t *testing.T) {
 	util.SetupLogger("info", true)
-	//if os.Getenv("GITHUB_ACTIONS") != "" {
-	//	t.Skipf("Test_Build is a manual test that is skipped in CICD because it requires GCB")
-	//}
 
 	tDir, err := os.MkdirTemp("", "")
 

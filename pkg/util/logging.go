@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -113,4 +114,13 @@ func PrettyString(v interface{}) string {
 		return fmt.Sprintf("PrettyString returned error; %v", err)
 	}
 	return string(p)
+}
+
+// LogFromContext returns a logr.Logger from the context or an instance of the global logger
+func LogFromContext(ctx context.Context) logr.Logger {
+	l, err := logr.FromContext(ctx)
+	if err != nil {
+		return zapr.NewLogger(zap.L())
+	}
+	return l
 }

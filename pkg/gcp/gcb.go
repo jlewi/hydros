@@ -5,30 +5,28 @@ import (
 	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"context"
-	"encoding/json"
+	"encoding/base64"
+	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
-	"gopkg.in/yaml.v3"
-	"os"
+	"strings"
+	"time"
+)
+
+const (
+	kanikoBuilder = "gcr.io/kaniko-project/executor:latest"
 )
 
 // BuildImage builds a docker image using GCB
-func BuildImage(buildFile string, project string, sourceCommit string) (*longrunningpb.Operation, error) {
+// Blocks until the build is complete
+func BuildImage(project string, build *cbpb.Build) (*longrunningpb.Operation, error) {
 	client, err := cb.NewClient(context.Background())
 
 	if err != nil {
 		return nil, err
 	}
 
-	build, err := parseBuildFile(buildFile)
-	if err != nil {
-		return nil, err
-	}
-
-	build.Source = &cbpb.Source{}
-	build.Substitutions["COMMIT_SHA"] = sourceCommit
 	req := &cbpb.CreateBuildRequest{
 		ProjectId: project,
 		Build:     build,
@@ -40,30 +38,131 @@ func BuildImage(buildFile string, project string, sourceCommit string) (*longrun
 	}
 
 	log := zapr.NewLogger(zap.L())
-	log.Info("Build started", "id", op.GetName(), "project", project, "sourceCommit", sourceCommit, "buildFile", buildFile)
+	log.Info("Build started", "id", op.GetName(), "project", project, "build", build)
+
+	op.GetDone()
 
 	return op, nil
 }
 
-func parseBuildFile(buildFile string) (*cbpb.Build, error) {
-	b, err := os.ReadFile(buildFile)
+// DefaultBuild constructs a default BuildFile
+// image should be the URI of the image with out the tag
+func DefaultBuild() *cbpb.Build {
+	build := &cbpb.Build{
+		Steps: []*cbpb.BuildStep{
+			{
+				Name: kanikoBuilder,
+				Args: []string{
+					"--dockerfile=Dockerfile",
+					"--cache=true",
+				},
+			},
+		},
+		Options: &cbpb.BuildOptions{
+			MachineType: cbpb.BuildOptions_UNSPECIFIED,
+			// Using CLOUD_LOGGING_ONLY means we can't stream the logs (at least not with GCB) but maybe with
+			// Cloud Logging? But we shouldn't need that
+			Logging: cbpb.BuildOptions_CLOUD_LOGGING_ONLY,
+		},
+	}
+
+	return build
+}
+
+// AddImages adds images to the build
+func AddImages(build *cbpb.Build, images []string) error {
+	if build.Steps == nil {
+		return errors.New("Build.Steps is nil")
+	}
+
+	if build.Steps[0].Name != kanikoBuilder {
+		return errors.Errorf("Build.Steps[0].Name %s doesn't match expected %s", build.Steps[0].Name, kanikoBuilder)
+	}
+
+	existing := make(map[string]bool)
+
+	destFlag := "--destination="
+
+	for _, arg := range build.Steps[0].Args {
+		if strings.HasPrefix(arg, destFlag) {
+			existing[arg[len(destFlag):]] = true
+		}
+	}
+
+	for _, image := range images {
+		if existing[image] {
+			continue
+		}
+
+		build.Steps[0].Args = append(build.Steps[0].Args, destFlag+image)
+	}
+	return nil
+}
+
+// OPNameToBuildID converts an operation name to a build id
+func OPNameToBuildID(name string) (string, error) {
+	// The operation name is of the form projects/<project>/operations/<id>
+	// The id will be the build id base64 encoded
+	pieces := strings.Split(name, "/")
+	buildId64 := pieces[len(pieces)-1]
+	buildId, err := base64.StdEncoding.DecodeString(buildId64)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to read build file: %v", buildFile)
+		return "", errors.Wrapf(err, "Failed to decode build id %v", buildId64)
 	}
 
-	parsed := map[string]interface{}{}
-	if err := yaml.Unmarshal(b, &parsed); err != nil {
-		return nil, errors.Wrapf(err, "Failed to parse build file: %v", buildFile)
+	return string(buildId), nil
+}
+
+// WaitForBuild waits for a build to complete. Caller should set the deadline on the context.
+// On timeout error is nil and the last operation is returned but Done won't be true.
+func WaitForBuild(ctx context.Context, client *cb.Client, project string, buildId string) (*cbpb.Build, error) {
+	// TODO(jeremy): We should get the logger from the context?
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		// Set a default deadline of 10 minutes
+		deadline = time.Now().Add(10 * time.Minute)
 	}
 
-	jsonData, err := json.Marshal(parsed)
+	log, err := logr.FromContext(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to marshal build file: %v", buildFile)
+		log = zapr.NewLogger(zap.L())
 	}
 
-	build := &cbpb.Build{}
-	if err := protojson.Unmarshal(jsonData, build); err != nil {
-		return build, errors.Wrapf(err, "Failed to unmarshal build file: %v", buildFile)
+	pause := 20 * time.Second
+
+	var last *cbpb.Build
+	for time.Now().Before(deadline) {
+		req := cbpb.GetBuildRequest{
+			ProjectId: project,
+			Id:        buildId,
+		}
+
+		// N.B. We can't just do opClient.WaitForOp because I think that does a server side wait and will timeout
+		// when the http/grpc timeout is reahed.
+		last, err := client.GetBuild(ctx, &req)
+
+		if err != nil {
+			// TODO(jeremy): We should decide if this is a permanent or retryable error
+			log.Error(err, "Failed to get build", "buildId", buildId)
+
+		} else {
+			switch last.GetStatus() {
+			case cbpb.Build_STATUS_UNKNOWN:
+			case cbpb.Build_PENDING:
+			case cbpb.Build_QUEUED:
+			case cbpb.Build_WORKING:
+			default:
+				return last, nil
+			}
+		}
+
+		if time.Now().Add(pause).After(deadline) {
+			return last, err
+		}
+		time.Sleep(pause)
+		continue
+
 	}
-	return build, nil
+
+	return last, nil
 }

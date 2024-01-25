@@ -15,10 +15,15 @@ type Image struct {
 	Kind       string   `yaml:"kind" yamltags:"required"`
 	Metadata   Metadata `yaml:"metadata,omitempty"`
 
-	Spec ImageSpec `yaml:"spec,omitempty"`
+	Spec   ImageSpec   `yaml:"spec,omitempty"`
+	Status ImageStatus `yaml:"status,omitempty"`
 }
 
 type ImageSpec struct {
+	// Image is the full path of the image to be built
+	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
+	// So it includes the registry and repository but not the tag or digest
+	Image   string           `yaml:"image,omitempty"`
 	Source  []*Source        `yaml:"source,omitempty"`
 	Builder *ArtifactBuilder `yaml:"builder,omitempty"`
 }
@@ -43,7 +48,29 @@ type ArtifactBuilder struct {
 
 // GCBConfig is the configuration for building with GoogleCloud Build
 type GCBConfig struct {
-	// BuildFile is the path of the cloudbuild.yaml file
-	// should be relative to the location of the YAML
-	BuildFile string `yaml:"buildFile,omitempty"`
+	// Project is the GCP project to use for building
+	Project string `yaml:"project,omitempty"`
+
+	// Timeout is a string understood by time.ParseDuration
+	// e.g. 10m
+	Timeout string `yaml:"timeout,omitempty"`
+
+	// MachineType is optional. If specified its the machine type to use for building.
+	// Increasing VCPU can increase build times but also comes with a provisioning
+	// delay since they are only started on demand (they are also more expensive).
+	// Private pools could potentially fix the delay cost
+	// See: https://cloud.google.com/build/docs/optimize-builds/increase-vcpu-for-builds#increase_vcpu_for_default_pools
+	// See: https://cloud.google.com/build/pricing
+	// See: https://cloud.google.com/build/docs/api/reference/rest/v1/projects.builds#machinetype
+	// For values. UNSPECIFIED uses the default value which has 1 CPU
+	MachineType string `yaml:"machineType,omitempty"`
+}
+
+type ImageStatus struct {
+	// SourceCommit is the commit hash of the source code
+	SourceCommit string `yaml:"sourceCommit,omitempty"`
+	// URI is the URI of the image
+	URI string `yaml:"uri,omitempty"`
+	// SHA is the SHA of the image
+	SHA string `yaml:"sha,omitempty"`
 }
