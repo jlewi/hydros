@@ -181,7 +181,6 @@ func init() {
 	rootCmd.AddCommand(githubCmds.NewAppTokenCmd(os.Stdout, &gOptions.level, &gOptions.devLogger))
 	rootCmd.AddCommand(commands.NewBuildCmd())
 	rootCmd.AddCommand(commands.NewTakeOverCmd())
-	rootCmd.AddCommand(commands.NewGenerateCmd())
 	rootCmd.AddCommand(commands.NewHydrosServerCmd())
 	rootCmd.AddCommand(commands.NewCloneCmd())
 
