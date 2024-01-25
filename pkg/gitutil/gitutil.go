@@ -2,8 +2,10 @@ package gitutil
 
 import (
 	"bufio"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -117,4 +119,56 @@ func LoadUser(r *git.Repository) (*User, error) {
 	// N.B it doesn't make sense to check the system configuration because that would apply to all users
 	// so why would you set the name and email their?
 	return user, nil
+}
+
+// CommitAll is a helper function to commit all changes in the repository.
+// r is the git repository
+// root is the root of the repository
+func CommitAll(r *git.Repository, root string, message string) error {
+	w, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	if err := AddGitignoreToWorktree(w, root); err != nil {
+		return errors.Wrapf(err, "Failed to add gitignore patterns")
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return err
+	}
+
+	log := zapr.NewLogger(zap.L())
+	if !status.IsClean() {
+		log.Info("committing all files")
+		if err := w.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+			return err
+		}
+
+		user, err := LoadUser(r)
+		if err != nil {
+			return err
+		}
+		commit, err := w.Commit(message, &git.CommitOptions{
+			Author: &object.Signature{
+				// Use the name and email as specified in the cfg file.
+				Name:  user.Name,
+				Email: user.Email,
+				When:  time.Now(),
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+		// Prints the current HEAD to verify that all worked well.
+		obj, err := r.CommitObject(commit)
+		if err != nil {
+			return err
+		}
+		log.Info("Commit succeeded", "commit", obj.String())
+	}
+	return nil
 }

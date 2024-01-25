@@ -252,6 +252,11 @@ func ReconcileFile(path string) error {
 		return errors.Wrapf(err, "Error getting head ref")
 	}
 
+	// Commit any changes
+	if err := gitutil.CommitAll(gitRepo, gitRoot, "hydros committing changes before build"); err != nil {
+		return err
+	}
+
 	w, err := gitRepo.Worktree()
 	if err != nil {
 		return errors.Wrapf(err, "Error getting worktree")
