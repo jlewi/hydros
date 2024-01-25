@@ -2,11 +2,12 @@ package gcp
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/util"
-	"os"
-	"testing"
 )
 
 func Test_DockerImageRefToArtifactImage(t *testing.T) {

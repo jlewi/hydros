@@ -3,7 +3,6 @@ package gitops
 import (
 	"context"
 	"fmt"
-	"github.com/jlewi/hydros/pkg/gcp"
 	"os"
 	"os/exec"
 	"path"
@@ -12,9 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/gcp"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/jlewi/hydros/pkg/gitutil"
 
@@ -603,20 +603,6 @@ func (s *Syncer) PushLocal(wDir string, keyFile string) error {
 		return errors.Wrapf(err, "Could not open respoistory at %v; ensure the directory contains a git repo", root)
 	}
 
-	w, err := r.Worktree()
-	if err != nil {
-		return err
-	}
-
-	if err := gitutil.AddGitignoreToWorktree(w, root); err != nil {
-		return errors.Wrapf(err, "Failed to add gitignore patterns")
-	}
-
-	status, err := w.Status()
-	if err != nil {
-		return err
-	}
-
 	// We need to identify the remote name for the source branch
 	// config reads .git/config
 	// We can use this to determine how the repository is setup to figure out what we need to do
@@ -625,36 +611,9 @@ func (s *Syncer) PushLocal(wDir string, keyFile string) error {
 		return err
 	}
 
-	if !status.IsClean() {
-		log.Info("committing all files")
-		if err := w.AddWithOptions(&git.AddOptions{All: true}); err != nil {
-			return err
-		}
-
-		user, err := gitutil.LoadUser(r)
-		if err != nil {
-			return err
-		}
-		message := "hydros automatically committing all files before running a sync."
-		commit, err := w.Commit(message, &git.CommitOptions{
-			Author: &object.Signature{
-				// Use the name and email as specified in the cfg file.
-				Name:  user.Name,
-				Email: user.Email,
-				When:  time.Now(),
-			},
-		})
-
-		if err != nil {
-			return err
-		}
-
-		// Prints the current HEAD to verify that all worked well.
-		obj, err := r.CommitObject(commit)
-		if err != nil {
-			return err
-		}
-		log.Info("Commit succeeded", "commit", obj.String())
+	message := "hydros automatically committing all files before running a sync."
+	if err := gitutil.CommitAll(r, root, message); err != nil {
+		return err
 	}
 
 	org := s.manifest.Spec.SourceRepo.Org

@@ -31,32 +31,18 @@ test:
 
 # Build with ko
 # This is much faster
-# TODO(jeremy): Get rid of GCB builds
+# TODO(jeremy): We should add support to image.yaml to use ko
 build-ko-image:
 	KO_DOCKER_REPO=us-west1-docker.pkg.dev/dev-sailplane/images/hydros \
 		ko build --bare github.com/jlewi/hydros/cmd  
 
-build-image-submit:
-	COMMIT=$$(git rev-parse HEAD) && \
-					gcloud builds submit --project=$(PROJECT) --async --config=cloudbuild.yaml \
-					--substitutions=COMMIT_SHA=local-$${COMMIT} \
-					--format=yaml > .build/gcbjob.yaml
+# This builds the image using hydros which uses GCB
+build-image:
+	go run github.com/jlewi/hydros/cmd  build -f images.yaml
 
-build-image-logs:
-	JOBID=$$(yq e ".id" .build/gcbjob.yaml) && \
-		gcloud --project=$(PROJECT) builds log --stream $${JOBID}
 
-build-image: build-dir build-image-submit build-image-logs
-
-# TODO(jeremy): This is really hacky. We should really be using hydros to do this in a declarative way.
-# i.e. by setting the image to the local commit. Need to update hydros code to support GCR.
-.PHONY: set-image
-set-image:
-	JOBID=$$(yq e ".id" .build/gcbjob.yaml) && \
-	cd manifests/lewi && \
-	kustomize edit set image hydros=us-west1-docker.pkg.dev/chat-lewi/hydros/hydros:$${JOBID}
-
-update-image: build-image set-image
+# N.B. The makefile commands to update the manifest were deleted as part of switching to hydros to build the images
+# We should now be able to use hydros to update the manifest and pin the images
 
 # hydrate uses the hydros takeover command to apply the sync configuration and push
 # hydrated manifests to the manifests repository.

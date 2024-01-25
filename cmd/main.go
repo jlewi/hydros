@@ -71,6 +71,7 @@ var (
 		},
 	}
 
+	// TODO(jeremy): We should update apply to support the Image resource.
 	applyCmd = &cobra.Command{
 		Use:   "apply <resource.yaml> <resourceDir> <resource.yaml> ...",
 		Short: "Apply the specified resource.",
@@ -178,6 +179,7 @@ func init() {
 	rootCmd.AddCommand(tagCmd)
 	rootCmd.AddCommand(newVersionCmd(os.Stdout))
 	rootCmd.AddCommand(githubCmds.NewAppTokenCmd(os.Stdout, &gOptions.level, &gOptions.devLogger))
+	rootCmd.AddCommand(commands.NewBuildCmd())
 	rootCmd.AddCommand(commands.NewTakeOverCmd())
 	rootCmd.AddCommand(commands.NewGenerateCmd())
 	rootCmd.AddCommand(commands.NewHydrosServerCmd())

@@ -1,0 +1,20 @@
+kind: Image
+apiVersion: hydros.sailplane.ai/v1alpha1
+metadata:
+  name: hydros
+  namespace: hydros
+spec:
+  image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros
+  source:
+    - src: Dockerfile
+    # Specify individual directories so we don't include hidden directories
+    - src: "go.mod"
+    - src: "go.sum"
+    - src: "api/**/*.go"
+    - src: "cmd/**/*.go"
+    - src: "pkg/**/*.go"
+    - src: "test/**/*.go"
+  builder:
+    gcb:
+      project: dev-sailplane
+      bucket : builds-sailplane

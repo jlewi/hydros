@@ -1,17 +1,18 @@
 package gcp
 
 import (
-	"cloud.google.com/go/artifactregistry/apiv1"
-	"cloud.google.com/go/artifactregistry/apiv1/artifactregistrypb"
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
+
+	artifactregistry "cloud.google.com/go/artifactregistry/apiv1"
+	"cloud.google.com/go/artifactregistry/apiv1/artifactregistrypb"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"net/url"
-	"strings"
 )
 
 const (
@@ -75,6 +76,10 @@ type ImageResolver struct {
 	client *artifactregistry.Client
 }
 
+// ResolveImageToSha resolves the image to a sha.
+// TODO(jeremy): We need to standardize how not found/doesn't exist errors are returned. We need to support multiple
+// registries and resolvers. Right now it will return a notfound Status wrapped in an error
+// you can check it using status.Code(err) == codes.NotFound
 func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1alpha1.Strategy) (util.DockerImageRef, error) {
 	if strategy != v1alpha1.MutableTagStrategy {
 		return util.DockerImageRef{}, fmt.Errorf("Only MutableTagStrategy is currently implemented for artifact registry")
