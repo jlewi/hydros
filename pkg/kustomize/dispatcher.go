@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jlewi/hydros/pkg/kustomize/fns/ai"
-
 	"github.com/jlewi/hydros/pkg/kustomize/fns/patches"
 
 	"github.com/go-logr/logr"
@@ -44,7 +42,6 @@ type Dispatcher struct {
 
 // dispatchTable maps configFunction Kinds to implementations
 var dispatchTable = map[string]func() kio.Filter{
-	ai.Kind:        ai.Filter,
 	configmap.Kind: configmap.Filter,
 	envs.Kind:      envs.Filter,
 	fields.Kind:    fields.Filter,
