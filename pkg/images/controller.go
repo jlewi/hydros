@@ -7,15 +7,24 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/gcp"
+	"github.com/jlewi/hydros/pkg/gitutil"
 	"github.com/jlewi/hydros/pkg/tarutil"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/jlewi/monogo/gcp/gcs"
+	"github.com/jlewi/monogo/helpers"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"gopkg.in/yaml.v3"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -135,7 +144,7 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 		log.Info("Tarball exists", "image", image.Spec.Image, "tarball", tarFilePath)
 	}
 
-	log.Info("Image doesn't exist; building", "image", image.Spec.Image)
+	log.Info("Image doesn't exist; building", "image", image.Spec.Image, "imageRef", imageRef)
 
 	build := gcp.DefaultBuild()
 
@@ -207,5 +216,88 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 		return errors.Errorf("Build failed with status %v", finalBuild.Status)
 	}
 
+	return nil
+}
+
+// ReconcileFile reconciles the images defined in a set of files.
+// It is a helper function primarily used by the CLI
+func ReconcileFile(path string) error {
+	log := zapr.NewLogger(zap.L())
+
+	manifestPath, err := filepath.Abs(path)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get absolute path for %v", path)
+	}
+
+	basePath := filepath.Dir(manifestPath)
+	log.Info("Resolved manifest path", "manifestPath", manifestPath, "basePath", basePath)
+
+	f, err := os.Open(manifestPath)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open file: %v", manifestPath)
+	}
+
+	gitRoot, err := gitutil.LocateRoot(path)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to locate git root for %v", path)
+	}
+
+	gitRepo, err := git.PlainOpenWithOptions(gitRoot, &git.PlainOpenOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Error opening git repo")
+	}
+
+	headRef, err := gitRepo.Head()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting head ref")
+	}
+
+	w, err := gitRepo.Worktree()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting worktree")
+	}
+
+	gitStatus, err := w.Status()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting git status")
+	}
+
+	d := yaml.NewDecoder(f)
+
+	c, err := NewController()
+
+	if err != nil {
+		return errors.Wrapf(err, "Error creating controller")
+	}
+
+	failures := &helpers.ListOfErrors{}
+	for {
+		image := &v1alpha1.Image{}
+		if err := d.Decode(image); err != nil {
+			if err == io.EOF {
+				return nil
+			} else {
+				return errors.Wrapf(err, "Failed to decode image from file %v", manifestPath)
+			}
+		}
+
+		image.Status.SourceCommit += headRef.Hash().String()
+
+		if !gitStatus.IsClean() {
+			log.Info("Git status is not clean; image will be tagged -dirty")
+			image.Status.SourceCommit += "-dirty"
+		}
+		ctx := context.Background()
+		if err := c.Reconcile(ctx, image, basePath); err != nil {
+			log.Error(err, "Failed to reconcile image", "image", image)
+			// Keep going
+			failures.AddCause(err)
+		}
+	}
+
+	if len(failures.Causes) > 0 {
+		failures.Final = errors.Errorf("Failed to reconcile %d images", len(failures.Causes))
+		return failures
+	}
 	return nil
 }

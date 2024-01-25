@@ -18,6 +18,13 @@ import (
 // LocateRoot locates the root of the git repository at path.
 // Returns empty string if not a git repo.
 func LocateRoot(path string) (string, error) {
+	fInfo, err := os.Stat(path)
+	if err != nil {
+		return "", errors.Wrapf(err, "Error stating path %v", path)
+	}
+	if !fInfo.IsDir() {
+		path = filepath.Dir(path)
+	}
 	for {
 		gDir := filepath.Join(path, ".git")
 		_, err := os.Stat(gDir)
