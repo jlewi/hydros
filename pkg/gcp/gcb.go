@@ -1,17 +1,18 @@
 package gcp
 
 import (
+	"context"
+	"encoding/base64"
+	"strings"
+	"time"
+
 	cb "cloud.google.com/go/cloudbuild/apiv1"
 	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"context"
-	"encoding/base64"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"strings"
-	"time"
 )
 
 const (

@@ -3,7 +3,6 @@ package gitops
 import (
 	"context"
 	"fmt"
-	"github.com/jlewi/hydros/pkg/gcp"
 	"os"
 	"os/exec"
 	"path"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jlewi/hydros/pkg/gcp"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"

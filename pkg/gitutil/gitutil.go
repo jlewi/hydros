@@ -2,10 +2,11 @@ package gitutil
 
 import (
 	"bufio"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"

@@ -1,17 +1,18 @@
 package gcp
 
 import (
-	"cloud.google.com/go/artifactregistry/apiv1"
-	"cloud.google.com/go/artifactregistry/apiv1/artifactregistrypb"
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
+
+	artifactregistry "cloud.google.com/go/artifactregistry/apiv1"
+	"cloud.google.com/go/artifactregistry/apiv1/artifactregistrypb"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"net/url"
-	"strings"
 )
 
 const (

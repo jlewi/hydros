@@ -3,6 +3,10 @@ package tarutil
 import (
 	"archive/tar"
 	"compress/gzip"
+	"io"
+	"os"
+	"path/filepath"
+
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -10,9 +14,6 @@ import (
 	"github.com/jlewi/monogo/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"io"
-	"os"
-	"path/filepath"
 )
 
 // Build builds an archive from the manifest

@@ -1,14 +1,15 @@
 package gcp
 
 import (
+	"context"
+	"time"
+
 	longrunning "cloud.google.com/go/longrunning/autogen"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"context"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"time"
 )
 
 var (

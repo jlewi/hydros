@@ -1,12 +1,18 @@
 package images
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	cb "cloud.google.com/go/cloudbuild/apiv1"
 	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	longrunning "cloud.google.com/go/longrunning/autogen"
 	"cloud.google.com/go/storage"
-	"context"
-	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -22,11 +28,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 // Controller for images. A controller is capable of building images and resolving images to shas.

@@ -3,16 +3,17 @@ package tarutil
 import (
 	"archive/tar"
 	"compress/gzip"
+	"io"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 func Test_Build(t *testing.T) {
