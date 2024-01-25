@@ -247,14 +247,14 @@ func ReconcileFile(path string) error {
 		return errors.Wrapf(err, "Error opening git repo")
 	}
 
+	// Commit any changes. Do this before calling headRef
+	if err := gitutil.CommitAll(gitRepo, gitRoot, "hydros committing changes before build"); err != nil {
+		return err
+	}
+
 	headRef, err := gitRepo.Head()
 	if err != nil {
 		return errors.Wrapf(err, "Error getting head ref")
-	}
-
-	// Commit any changes
-	if err := gitutil.CommitAll(gitRepo, gitRoot, "hydros committing changes before build"); err != nil {
-		return err
 	}
 
 	w, err := gitRepo.Worktree()
