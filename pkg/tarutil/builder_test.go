@@ -4,11 +4,12 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
