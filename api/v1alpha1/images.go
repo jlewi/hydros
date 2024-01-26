@@ -30,6 +30,14 @@ type ImageSpec struct {
 
 // Source is a local path to include as an artifact.
 // It is inspired by skaffold; https://skaffold.dev/docs/references/yaml/
+// When building images from a YAML file the src is a relative path to the location of the YAML file.
+// src can start with a parent prefix e.g. ".." to obtain files higher in the directory tree relative to the
+// YAML file. The parent directory wil then be used when computing the destination path.
+// e.g. if we have
+// /p/a/image.yaml
+// /p/b/file.txt
+// And image.yaml contains src "../b/file.txt" then the file will be copied to b/file.txt by default in the
+// tarball
 type Source struct {
 	// Src is a glob pattern to match local paths against. Directories should be delimited by / on all platforms.
 	// e.g. "css/**/*.css"

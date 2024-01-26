@@ -49,6 +49,8 @@ func BuildImage(project string, build *cbpb.Build) (*longrunningpb.Operation, er
 // DefaultBuild constructs a default BuildFile
 // image should be the URI of the image with out the tag
 func DefaultBuild() *cbpb.Build {
+	now := time.Now()
+	nowStr := now.Format(time.RFC3339)
 	build := &cbpb.Build{
 		Steps: []*cbpb.BuildStep{
 			{
@@ -56,6 +58,10 @@ func DefaultBuild() *cbpb.Build {
 				Args: []string{
 					"--dockerfile=Dockerfile",
 					"--cache=true",
+					// Set the date as a build arg
+					// This is so that it can be passed to the builder and used to set the date in the image
+					// of the build
+					"--build-arg=DATE=" + nowStr,
 				},
 			},
 		},
@@ -80,24 +86,57 @@ func AddImages(build *cbpb.Build, images []string) error {
 		return errors.Errorf("Build.Steps[0].Name %s doesn't match expected %s", build.Steps[0].Name, kanikoBuilder)
 	}
 
-	existing := make(map[string]bool)
-
 	destFlag := "--destination="
 
-	for _, arg := range build.Steps[0].Args {
-		if strings.HasPrefix(arg, destFlag) {
-			existing[arg[len(destFlag):]] = true
-		}
+	args := make([]string, 0, len(images))
+
+	for _, i := range images {
+		args = append(args, destFlag+i)
 	}
 
-	for _, image := range images {
-		if existing[image] {
+	return AddKanikoArgs(build, args)
+	return nil
+}
+
+// AddKanikoArgs adds a build arg to the build
+// null-op if its already added
+func AddKanikoArgs(build *cbpb.Build, buildArgs []string) error {
+	if build.Steps == nil {
+		return errors.New("Build.Steps is nil")
+	}
+
+	if build.Steps[0].Name != kanikoBuilder {
+		return errors.Errorf("Build.Steps[0].Name %s doesn't match expected %s", build.Steps[0].Name, kanikoBuilder)
+	}
+
+	existing := make(map[string]bool)
+
+	for _, arg := range build.Steps[0].Args {
+		existing[arg] = true
+	}
+
+	for _, a := range buildArgs {
+		if existing[a] {
 			continue
 		}
 
-		build.Steps[0].Args = append(build.Steps[0].Args, destFlag+image)
+		build.Steps[0].Args = append(build.Steps[0].Args, a)
 	}
 	return nil
+}
+
+// AddBuildTags passes various values as build flags to the build
+func AddBuildTags(build *cbpb.Build, sourceCommit string, version string) error {
+	args := []string{
+		// Pass the values along to Docker
+		"--build-arg=COMMIT=" + sourceCommit,
+		"--build-arg=VERSION=" + version,
+		// Build labels; Does this do anything
+		"--label=COMMIT=" + sourceCommit,
+		"--label=COMMIT=" + version,
+	}
+
+	return AddKanikoArgs(build, args)
 }
 
 // OPNameToBuildID converts an operation name to a build id

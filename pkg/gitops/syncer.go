@@ -612,7 +612,16 @@ func (s *Syncer) PushLocal(wDir string, keyFile string) error {
 	}
 
 	message := "hydros automatically committing all files before running a sync."
-	if err := gitutil.CommitAll(r, root, message); err != nil {
+	w, err := r.Worktree()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting worktree")
+	}
+
+	if err := gitutil.AddGitignoreToWorktree(w, root); err != nil {
+		return errors.Wrapf(err, "Failed to add gitignore patterns")
+	}
+
+	if err := gitutil.CommitAll(r, w, message); err != nil {
 		return err
 	}
 

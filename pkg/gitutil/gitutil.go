@@ -50,6 +50,7 @@ func LocateRoot(path string) (string, error) {
 // This is a workaround for https://github.com/go-git/go-git/issues/597. If we don't call this before doing add
 // all then the ignore patterns won't be respected.
 //
+// N.B. It looks like we also need to call this function if we want IsClean to ignore files
 // N.B this doesn't work with nested .gitignore files.
 func AddGitignoreToWorktree(wt *git.Worktree, repositoryPath string) error {
 	log := zapr.NewLogger(zap.L())
@@ -123,53 +124,67 @@ func LoadUser(r *git.Repository) (*User, error) {
 }
 
 // CommitAll is a helper function to commit all changes in the repository.
-// r is the git repository
-// root is the root of the repository
-func CommitAll(r *git.Repository, root string, message string) error {
-	w, err := r.Worktree()
-	if err != nil {
-		return err
-	}
-
-	if err := AddGitignoreToWorktree(w, root); err != nil {
-		return errors.Wrapf(err, "Failed to add gitignore patterns")
-	}
-
+// null op if its clean.
+// w is the worktree
+// You should call AddGitIgnore on the worktree before calling this function if you want to ensure files are ignored.
+// TODO(jeremy): I'm not sure this is the right API. I did it this way because with kubedr it was really slow
+// to get the worktree and add .gitignore so I didn't want to do that more than once.
+// https://github.com/sailplaneai/code/issues/872 is tracking the slowness.
+func CommitAll(r *git.Repository, w *git.Worktree, message string) error {
+	log := zapr.NewLogger(zap.L())
+	log.Info("Getting git status")
 	status, err := w.Status()
 	if err != nil {
 		return err
 	}
 
-	log := zapr.NewLogger(zap.L())
-	if !status.IsClean() {
-		log.Info("committing all files")
-		if err := w.AddWithOptions(&git.AddOptions{All: true}); err != nil {
-			return err
-		}
-
-		user, err := LoadUser(r)
-		if err != nil {
-			return err
-		}
-		commit, err := w.Commit(message, &git.CommitOptions{
-			Author: &object.Signature{
-				// Use the name and email as specified in the cfg file.
-				Name:  user.Name,
-				Email: user.Email,
-				When:  time.Now(),
-			},
-		})
-
-		if err != nil {
-			return err
-		}
-
-		// Prints the current HEAD to verify that all worked well.
-		obj, err := r.CommitObject(commit)
-		if err != nil {
-			return err
-		}
-		log.Info("Commit succeeded", "commit", obj.String())
+	if status.IsClean() {
+		log.Info("tree is clean; no commit needed")
+		return nil
 	}
+	log.Info("committing all files")
+	if err := w.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		return err
+	}
+
+	user, err := LoadUser(r)
+	if err != nil {
+		return err
+	}
+	commit, err := w.Commit(message, &git.CommitOptions{
+		Author: &object.Signature{
+			// Use the name and email as specified in the cfg file.
+			Name:  user.Name,
+			Email: user.Email,
+			When:  time.Now(),
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Prints the current HEAD to verify that all worked well.
+	obj, err := r.CommitObject(commit)
+	if err != nil {
+		return err
+	}
+	log.Info("Commit succeeded", "commit", obj.String())
+
 	return nil
+}
+
+// TrackedIsClean returns true if the repository is clean except for untracked files.
+// git.IsClean doesn't work because it doesn't ignore untracked files.
+func TrackedIsClean(gitStatus git.Status) bool {
+	for _, s := range gitStatus {
+		if s.Staging == git.Untracked || s.Worktree == git.Untracked {
+			continue
+		}
+		if s.Staging != git.Unmodified || s.Worktree != git.Unmodified {
+			return false
+		}
+	}
+
+	return true
 }
