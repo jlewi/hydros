@@ -197,6 +197,9 @@ func Test_matchGlob(t *testing.T) {
 
 			fs := os.DirFS(tDir)
 			actual, err := matchGlob(fs, c.glob)
+			if err != nil {
+				t.Fatalf("Error matching glob %v", err)
+			}
 			if d := cmp.Diff(c.expected, actual); d != "" {
 				t.Errorf("Unexpected result (-want +got):\n%s", d)
 			}
