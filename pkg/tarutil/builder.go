@@ -53,14 +53,17 @@ func Build(image *v1alpha1.Image, basePath string, tarFilePath string) error {
 
 		sBase := basePath
 		// We need to adjust the basepath if we have a relative path
-		parent, _ := splitIntoParent(a.Src)
+		parent, glob := splitIntoParent(a.Src)
 
 		if parent != "" {
 			sBase = filepath.Clean(filepath.Join(sBase, parent))
 		}
 
-		dirFS := os.DirFS(basePath)
-		matches, err := matchGlob(dirFS, a.Src)
+		// Match the glob
+		// matchGlob can handle globs with ../. However DirFs returns a filesystem rooted at the directory
+		// so we need to adjust the glob so that all paths occur under the directory used as the root of the DirFs
+		fs := os.DirFS(sBase)
+		matches, err := matchGlob(fs, glob)
 		if err != nil {
 			log.Error(err, "Failed to search glob", "glob", a.Src, "basePath", sBase)
 			return err
