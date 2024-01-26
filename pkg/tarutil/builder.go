@@ -3,10 +3,6 @@ package tarutil
 import (
 	"archive/tar"
 	"compress/gzip"
-	"io"
-	"os"
-	"path/filepath"
-
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -14,6 +10,11 @@ import (
 	"github.com/jlewi/monogo/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // Build builds an archive from the manifest
@@ -47,25 +48,57 @@ func Build(image *v1alpha1.Image, basePath string, tarFilePath string) error {
 	tw := tar.NewWriter(gzWriter)
 	defer tw.Close()
 
-	dirFS := os.DirFS(basePath)
 	for _, a := range image.Spec.Source {
 		log.Info("Adding asset", "asset", a)
 
-		matches, err := doublestar.Glob(dirFS, a.Src)
+		sBase := basePath
+		// We need to adjust the basepath if we have a relative path
+		parent, _ := splitIntoParent(a.Src)
+
+		if parent != "" {
+			sBase = filepath.Clean(filepath.Join(sBase, parent))
+		}
+
+		dirFS := os.DirFS(basePath)
+		matches, err := matchGlob(dirFS, a.Src)
 		if err != nil {
-			log.Error(err, "Failed to search glob", "glob", a.Src, "basePath", basePath)
+			log.Error(err, "Failed to search glob", "glob", a.Src, "basePath", sBase)
 			return err
 		}
-		log.Info("Matched glob", "glob", a.Src, "numMatches", len(matches), "basePath", basePath)
+		log.Info("Matched glob", "glob", a.Src, "numMatches", len(matches), "basePath", sBase)
 		for _, m := range matches {
-			if err := addFileToTarGenerator(tw, basePath, m, a.Strip, a.Dest); err != nil {
-				log.Error(err, "Error adding file to tarball", "file", m, "basePath", basePath, "strip", a.Strip, "dest", a.Dest)
+			if err := addFileToTarGenerator(tw, sBase, m, a.Strip, a.Dest); err != nil {
+				log.Error(err, "Error adding file to tarball", "file", m, "basePath", sBase, "strip", a.Strip, "dest", a.Dest)
 				return err
 			}
 		}
 
 	}
 	return nil
+}
+
+// splitIntoParent splits a path into a parent and glob
+// e.g. ../foo/bar/*.txt -> ../foo/bar, *.txt
+func splitIntoParent(path string) (string, string) {
+	pieces := strings.Split(path, string(filepath.Separator))
+
+	index := 0
+	for ; index < len(pieces); index++ {
+		if pieces[index] != ".." {
+			break
+		}
+	}
+
+	parent := filepath.Join(pieces[:index]...)
+	glob := filepath.Join(pieces[index:]...)
+	return parent, glob
+}
+
+// matchGlob matches a glob against a filesystem
+// It supports ** and ../
+func matchGlob(dirFS fs.FS, glob string) ([]string, error) {
+	glob = filepath.Clean(glob)
+	return doublestar.Glob(dirFS, glob)
 }
 
 // addFileToTarGenerator adds a file to the tarball
@@ -81,7 +114,7 @@ func addFileToTarGenerator(tw *tar.Writer, basePath string, path string, strip s
 	}
 	if info.IsDir() {
 		log.Info("Skipping directory", "path", fullPath)
-		return filepath.SkipDir
+		return nil
 	}
 
 	// return on non-regular files
