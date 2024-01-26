@@ -26,6 +26,8 @@ type ReposCloner struct {
 	BaseDir string
 }
 
+// Run clones the repository. If the repository has already been cloned then it will fetch the latest changes
+// and checkout the specified branch. Any changes are dropped.
 func (r *ReposCloner) Run(ctx context.Context) error {
 	// loop over the repos and clone them
 	for _, uri := range r.URIs {
@@ -175,7 +177,6 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 		}
 	}
 
-	//fullBranch := plumbing.ReferenceName(branchRef)
 	checkoutOptions := &git.CheckoutOptions{
 		Force:  dropChanges,
 		Create: false,
