@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
@@ -130,6 +131,26 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 	}
 
 	wg.Wait()
+	return nil
+}
+
+func (c *RepoController) RunPeriodically(ctx context.Context, period time.Duration) error {
+	log := util.LogFromContext(ctx)
+	log = log.WithValues("repoConfig", c.config.Metadata.Name)
+	ctx = logr.NewContext(ctx, log)
+
+	for {
+		err := c.Reconcile(ctx)
+		if err != nil {
+			log.Error(err, "Error reconciling")
+		}
+
+		if period == 0 {
+			return err
+		}
+		log.Info("Sleeping", "period", period)
+		time.Sleep(period)
+	}
 	return nil
 }
 

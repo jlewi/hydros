@@ -163,8 +163,12 @@ func apply(a applyOptions, path string, syncNames map[string]string) error {
 				return err
 			}
 
-			if err := c.Reconcile(context.Background()); err != nil {
-				return err
+			if a.period > 0 {
+				go c.RunPeriodically(context.Background(), a.period)
+			} else {
+				if err := c.Reconcile(context.Background()); err != nil {
+					return err
+				}
 			}
 
 		} else if m.Kind == v1alpha1.EcrPolicySyncKind {
