@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 	"strings"
+	"sync"
 )
 
 // RepoController is a controller for a repo.
@@ -114,11 +115,19 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 		return err
 	}
 
+	// Apply all the resources in parallel
+	// https://github.com/jlewi/hydros/issues/60 is tracking properly ordering dependencies.
+	var wg sync.WaitGroup
 	for _, r := range resources {
-		if err := c.applyResource(ctx, r); err != nil {
-			log.Error(err, "Error applying resource", "path", r.path, "name", r.node.GetName())
-		}
+		go func() {
+			wg.Add(1)
+			if err := c.applyResource(ctx, r); err != nil {
+				log.Error(err, "Error applying resource", "path", r.path, "name", r.node.GetName())
+			}
+		}()
 	}
+
+	wg.Wait()
 	return nil
 }
 
