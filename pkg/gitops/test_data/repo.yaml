@@ -10,3 +10,6 @@ spec:
     privateKey: gcpsecretmanager:///projects/dev-sailplane/secrets/hydros-ghapp-key/versions/latest
   globs:
     - "**/*.yaml"
+  selectors:
+    - matchLabels:
+        env: dev

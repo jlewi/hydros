@@ -13,10 +13,13 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
 	"path/filepath"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
+	"strings"
 )
 
 // RepoController is a controller for a repo.
@@ -29,6 +32,9 @@ type RepoController struct {
 	cloner          *github.ReposCloner
 	imageController *images.Controller
 	gitRepo         *git.Repository
+	manager         *github.TransportManager
+
+	selectors []labels.Selector
 }
 
 func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoController, error) {
@@ -61,11 +67,26 @@ func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoContro
 		BaseDir: workDir,
 	}
 
+	selectors := make([]labels.Selector, 0, len(config.Spec.Selectors))
+	for _, s := range config.Spec.Selectors {
+		k8sS, err := s.ToK8s()
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error converting selector; %v", util.PrettyString(s))
+		}
+		k8sSelector, err := meta.LabelSelectorAsSelector(k8sS)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to convert selector to k8s selector; %v", util.PrettyString(s))
+		}
+		selectors = append(selectors, k8sSelector)
+	}
+
 	return &RepoController{
 		workDir:         workDir,
 		config:          config,
 		cloner:          cloner,
 		imageController: imageController,
+		manager:         manager,
+		selectors:       selectors,
 	}, nil
 }
 
@@ -120,7 +141,7 @@ func (c *RepoController) findResources(ctx context.Context) ([]*resource, error)
 		}
 
 		for _, m := range matches {
-			yamlFiles = append(yamlFiles, filepath.Join(repoDir, m))
+			yamlFiles = append(yamlFiles, m)
 		}
 	}
 
@@ -133,11 +154,14 @@ func (c *RepoController) findResources(ctx context.Context) ([]*resource, error)
 	for _, yamlFile := range yamlFiles {
 		log.V(util.Debug).Info("Reading YAML file", "yamlFile", yamlFile)
 
-		nodes, err := util.ReadYaml(yamlFile)
+		fullpath := filepath.Join(repoDir, yamlFile)
+		nodes, err := util.ReadYaml(fullpath)
 		if err != nil {
-			log.Error(err, "Error reading YAML file", "yamlFile", yamlFile)
+			log.Error(err, "Error reading YAML file", "yamlFile", fullpath)
 			continue
 		}
+
+		seen := map[string]bool{}
 
 		for _, node := range nodes {
 			s := schema.FromAPIVersionAndKind(node.GetApiVersion(), node.GetKind())
@@ -151,10 +175,34 @@ func (c *RepoController) findResources(ctx context.Context) ([]*resource, error)
 				log.V(util.Debug).Info("Skipping resource with kind", "kind", s.Kind)
 				continue
 			}
-			log.Info("Adding resource", "kind", s.Kind, "name", node.GetName(), "path", yamlFile)
+
+			// Check it matches a selector
+			isMatch := false
+			labelsMap := labels.Set(node.GetLabels())
+			for _, s := range c.selectors {
+				if s.Matches(labelsMap) {
+					isMatch = true
+					break
+				}
+			}
+			if !isMatch {
+				log.V(util.Debug).Info("Skipping resource because it doesn't match any selectors", "kind", s.Kind, "name", node.GetName(), "path", fullpath, "labels", labelsMap)
+				continue
+			}
+
+			// Ensure the resource has a name that is unique at least within the file.
+			if seen[node.GetName()] {
+				err := errors.New("Duplicate resource")
+				log.Error(err, "Skipping duplicate resource. Each resource in the file should be uniquely named", "kind", s.Kind, "name", node.GetName(), "path", fullpath)
+				continue
+			}
+			seen[node.GetName()] = true
+			log.Info("Adding resource", "kind", s.Kind, "name", node.GetName(), "path", fullpath)
+
 			resources = append(resources, &resource{
-				node: node,
-				path: yamlFile,
+				node:  node,
+				path:  fullpath,
+				rPath: yamlFile,
 			})
 		}
 	}
@@ -169,7 +217,7 @@ func (c *RepoController) applyResource(ctx context.Context, r *resource) error {
 	case v1alpha1.ImageGVK.Kind:
 		return c.applyImage(ctx, r)
 	case v1alpha1.ManifestSyncGVK.Kind:
-		return errors.Errorf("ManifestSync is not yet implemented")
+		return c.applyManifest(ctx, r)
 	default:
 		return errors.Errorf("Unknown kind %v", r.node.GetKind())
 	}
@@ -197,7 +245,33 @@ func (c *RepoController) applyImage(ctx context.Context, r *resource) error {
 	return c.imageController.Reconcile(ctx, image, basePath)
 }
 
+func (c *RepoController) applyManifest(ctx context.Context, r *resource) error {
+	log := util.LogFromContext(ctx)
+	log = log.WithValues("path", r.path, "name", r.node.GetName())
+
+	manifest := &v1alpha1.ManifestSync{}
+
+	if err := r.node.YNode().Decode(manifest); err != nil {
+		return errors.Wrapf(err, "Error decoding manifest")
+	}
+
+	// Create a workDir for this syncer
+	// Each ManifestSync should get its own workDir
+	// This should be stable names so that they get reused on each sync
+	dirname := strings.Replace(r.rPath, "/", "_", -1) + "_" + r.node.GetName()
+	workDir := filepath.Join(c.workDir, dirname)
+
+	syncer, err := NewSyncer(manifest, c.manager, SyncWithWorkDir(workDir), SyncWithLogger(log))
+	if err != nil {
+		log.Error(err, "Failed to create syncer")
+		return err
+	}
+
+	return syncer.RunOnce(false)
+}
+
 type resource struct {
-	node *yaml.RNode
-	path string
+	node  *yaml.RNode
+	path  string
+	rPath string
 }

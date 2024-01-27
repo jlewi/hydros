@@ -1,6 +1,8 @@
 package v1alpha1
 
-import "strings"
+import (
+	"strings"
+)
 
 var (
 	RepoGVK = Gvk{
@@ -28,7 +30,11 @@ type RepoSpec struct {
 	GitHubAppConfig GitHubAppConfig `yaml:"gitHubAppConfig"`
 
 	// Globs is a list of globs to search for resources to sync.
-	Globs []string `yaml:"globs"`
+	Globs []string `yaml:"globs,omitempty"`
+
+	// Selectors is one or more labelselectors used to filter resources
+	// to sync. A resource must match one of the label selectors in order to be included
+	Selectors []LabelSelector `yaml:"selectors,omitempty"`
 }
 
 // IsValid returns true if the config is valid.
@@ -56,6 +62,11 @@ func (c *RepoConfig) IsValid() (string, bool) {
 	if len(c.Spec.Globs) == 0 {
 		errors = append(errors, "At least one glob must be specified. Use **/*.yaml to match all YAML files")
 	}
+
+	if len(c.Spec.Selectors) == 0 {
+		errors = append(errors, "At least one selector must be specified.")
+	}
+
 	if len(errors) > 0 {
 		return "RepoConfig is invalid. " + strings.Join(errors, ". "), false
 	}

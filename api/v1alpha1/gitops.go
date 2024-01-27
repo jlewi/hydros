@@ -29,6 +29,7 @@ const (
 
 	// LatestTagPrefix means you should look for the most recent image
 	// which has that tag as a prefix.
+	// TODO(jeremy): Should we get rid of this? This was for Primer specific tagging.
 	LatestTagPrefix Strategy = "latestTagPrefix"
 
 	// IncludeRepo is the enum value indicating a repo list is an include list.

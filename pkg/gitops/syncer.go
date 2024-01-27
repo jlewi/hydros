@@ -850,7 +850,7 @@ func (s *Syncer) lastStatusFromManifest(syncFile string) *v1alpha1.ManifestSyncS
 func (s *Syncer) getSourceCommit() string {
 	log := s.log
 	// Get the latest commit on the source repo
-	cmd := exec.Command("git", "rev-parse", "--short", "origin/"+s.manifest.Spec.SourceRepo.Branch)
+	cmd := exec.Command("git", "rev-parse", "origin/"+s.manifest.Spec.SourceRepo.Branch)
 	cmd.Dir = filepath.Join(s.workDir, sourceKey)
 
 	output, err := cmd.CombinedOutput()
@@ -1098,6 +1098,9 @@ func (s *Syncer) applyKustomizeFns(hydratedPath string, sourceRoot string, files
 	return d.ApplyFilteredFuncs(funcs.Nodes)
 }
 
+// TODO(jeremy): Having buildImages as a method on Syncer no longer makes sense.
+// We have the Image resource which should be used to build images. We aren't using skaffold to build images
+// so we might just want to delete this code.
 func (s *Syncer) buildImages(sourcePath string, sourceCommit string) error {
 	// Give each run of buildImages a unique id so its easy to group all the messages about image building
 	// for a particular run.
