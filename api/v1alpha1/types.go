@@ -20,6 +20,8 @@ type Metadata struct {
 	ResourceVersion string `yaml:"resourceVersion,omitempty"`
 }
 
+// TODO: This should be a k8s.io/apimachinery/pkg/runtime/schema.GroupVersionKind
+
 type Gvk struct {
 	Group   string `json:"group,omitempty" yaml:"group,omitempty"`
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`

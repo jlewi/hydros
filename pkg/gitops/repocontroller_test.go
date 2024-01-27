@@ -14,7 +14,7 @@ func Test_repoController(t *testing.T) {
 	if os.Getenv("GITHUB_ACTIONS") != "" {
 		t.Skip("Skipping test because running in GHA")
 	}
-	
+
 	util.SetupLogger("info", true)
 
 	cwd, err := os.Getwd()
@@ -27,7 +27,7 @@ func Test_repoController(t *testing.T) {
 
 	repo := &v1alpha1.RepoConfig{}
 	if err := yaml.NewDecoder(f).Decode(&repo); err != nil {
-		t.Errorf("yaml decode failed: %v", err)
+		t.Fatalf("yaml decode failed: %v", err)
 	}
 
 	// Use the same workDir accross tests so we don't have to keep checking it out

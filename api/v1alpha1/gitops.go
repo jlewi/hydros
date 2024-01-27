@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/pkg/errors"
 )
@@ -34,6 +35,10 @@ const (
 	IncludeRepo RepoMatchType = "include"
 	// ExcludeRepo is the enum value indicating a repo list is an exclude list.
 	ExcludeRepo RepoMatchType = "exclude"
+)
+
+var (
+	ManifestSyncGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, ManifestSyncKind)
 )
 
 // ManifestSync continually syncs unhyrated manifests to a hydrated repo.

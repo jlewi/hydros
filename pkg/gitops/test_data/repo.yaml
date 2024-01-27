@@ -8,3 +8,5 @@ spec:
   gitHubAppConfig:
     appID: 384797
     privateKey: gcpsecretmanager:///projects/dev-sailplane/secrets/hydros-ghapp-key/versions/latest
+  globs:
+    - "**/*.yaml"

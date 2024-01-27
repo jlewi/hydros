@@ -53,6 +53,9 @@ func (c *RepoConfig) IsValid() (string, bool) {
 		errors = append(errors, "GitHubAppConfig.PrivateKey is required")
 	}
 
+	if len(c.Spec.Globs) == 0 {
+		errors = append(errors, "At least one glob must be specified. Use **/*.yaml to match all YAML files")
+	}
 	if len(errors) > 0 {
 		return "RepoConfig is invalid. " + strings.Join(errors, ". "), false
 	}
