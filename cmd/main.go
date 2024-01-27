@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jlewi/hydros/cmd/commands"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/jlewi/hydros/cmd/commands"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"

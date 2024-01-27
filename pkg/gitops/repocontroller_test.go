@@ -2,12 +2,13 @@ package gitops
 
 import (
 	"context"
-	"github.com/jlewi/hydros/api/v1alpha1"
-	"github.com/jlewi/hydros/pkg/util"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
 	"testing"
+
+	"github.com/jlewi/hydros/api/v1alpha1"
+	"github.com/jlewi/hydros/pkg/util"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
 func Test_repoController(t *testing.T) {
@@ -24,7 +25,9 @@ func Test_repoController(t *testing.T) {
 
 	repoFile := filepath.Join(cwd, "test_data", "repo.yaml")
 	f, err := os.Open(repoFile)
-
+	if err != nil {
+		t.Fatalf("os.Open(%v) failed: %v", repoFile, err)
+	}
 	repo := &v1alpha1.RepoConfig{}
 	if err := yaml.NewDecoder(f).Decode(&repo); err != nil {
 		t.Fatalf("yaml decode failed: %v", err)

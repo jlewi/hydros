@@ -1,6 +1,11 @@
 package gitops
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
@@ -16,11 +21,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
-	"strings"
-	"sync"
 )
 
 // RepoController is a controller for a repo.
@@ -119,11 +120,12 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 	// https://github.com/jlewi/hydros/issues/60 is tracking properly ordering dependencies.
 	var wg sync.WaitGroup
 	for _, r := range resources {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			if err := c.applyResource(ctx, r); err != nil {
 				log.Error(err, "Error applying resource", "path", r.path, "name", r.node.GetName())
 			}
+			wg.Done()
 		}()
 	}
 
@@ -221,7 +223,7 @@ func (c *RepoController) findResources(ctx context.Context) ([]*resource, error)
 func (c *RepoController) applyResource(ctx context.Context, r *resource) error {
 	log := util.LogFromContext(ctx)
 	log = log.WithValues("path", r.path, "name", r.node.GetName())
-
+	ctx = logr.NewContext(ctx, log)
 	switch r.node.GetKind() {
 	case v1alpha1.ImageGVK.Kind:
 		return c.applyImage(ctx, r)
@@ -234,9 +236,6 @@ func (c *RepoController) applyResource(ctx context.Context, r *resource) error {
 }
 
 func (c *RepoController) applyImage(ctx context.Context, r *resource) error {
-	log := util.LogFromContext(ctx)
-	log = log.WithValues("path", r.path, "name", r.node.GetName())
-
 	image := &v1alpha1.Image{}
 
 	if err := r.node.YNode().Decode(image); err != nil {

@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-logr/zapr"
@@ -15,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"time"
 )
 
 type applyOptions struct {
@@ -63,8 +65,8 @@ func NewApplyCmd() *cobra.Command {
 			}
 
 			if len(syncNames) == 0 {
-				err := fmt.Errorf("No ManifestSyncs found")
-				log.Error(err, "No ManifestSync objects found", "paths", paths)
+				err := fmt.Errorf("No hydros resources found")
+				log.Error(err, "No hydros resources found", "paths", paths)
 				return
 			}
 			// Wait for ever
@@ -145,6 +147,24 @@ func apply(a applyOptions, path string, syncNames map[string]string) error {
 					log.Error(err, "Failed to run Sync")
 					allErrors.AddCause(err)
 				}
+			}
+
+		} else if m.Kind == v1alpha1.RepoGVK.Kind {
+			syncNames[m.Name] = path
+			repo := &v1alpha1.RepoConfig{}
+			if err := n.YNode().Decode(&repo); err != nil {
+				log.Error(err, "Failed to decode RepoConfig")
+				allErrors.AddCause(err)
+				continue
+			}
+
+			c, err := gitops.NewRepoController(repo, a.workDir)
+			if err != nil {
+				return err
+			}
+
+			if err := c.Reconcile(context.Background()); err != nil {
+				return err
 			}
 
 		} else if m.Kind == v1alpha1.EcrPolicySyncKind {

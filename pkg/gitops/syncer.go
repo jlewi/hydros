@@ -363,11 +363,11 @@ func (s *Syncer) RunOnce(force bool) error {
 			// We want to accumulate a list of all unresolved images because its helpful to print a list of them
 			// all in the logs.
 			unResolved = append(unResolved, source)
-			log.Error(err, "Failed to resolve image.", "image", source, "strategy", strategy)
+			log.Error(err, "Failed to resolve image.", "image", taggedImage, "strategy", strategy)
 			continue
 		}
 		pinnedImages[source] = resolved
-		log.V(util.Debug).Info("Resolved image", "source", source, "resolved", resolved)
+		log.V(util.Debug).Info("Resolved image", "source", source, "image", taggedImage, "resolved", resolved)
 	}
 
 	if len(unResolved) > 0 {
