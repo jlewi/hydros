@@ -3,7 +3,7 @@ package v1alpha1
 const (
 	// Group for MLP tasks.
 	// TODO(jeremy): we should change this
-	Group = "mlp.primer.ai"
+	Group = "hydros.sailplane.ai"
 	// Version for tasks.
 	Version = "v1alpha1"
 )
@@ -18,4 +18,12 @@ type Metadata struct {
 	// Ref: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// This should be treated as an opaque value by clients.
 	ResourceVersion string `yaml:"resourceVersion,omitempty"`
+}
+
+// TODO: This should be a k8s.io/apimachinery/pkg/runtime/schema.GroupVersionKind
+
+type Gvk struct {
+	Group   string `json:"group,omitempty" yaml:"group,omitempty"`
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
+	Kind    string `json:"kind,omitempty" yaml:"kind,omitempty"`
 }

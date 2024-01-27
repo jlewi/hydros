@@ -1,0 +1,15 @@
+apiVersion: hydros.sailplane.ai/v1alpha1
+kind: RepoConfig
+metadata:
+  name: repo
+  namespace: sailplaneai
+spec:
+  repo: https://github.com/sailplaneai/code.git
+  gitHubAppConfig:
+    appID: 384797
+    privateKey: gcpsecretmanager:///projects/dev-sailplane/secrets/hydros-ghapp-key/versions/latest
+  globs:
+    - "**/*.yaml"
+  selectors:
+    - matchLabels:
+        env: dev

@@ -81,8 +81,9 @@ type ImageResolver struct {
 // registries and resolvers. Right now it will return a notfound Status wrapped in an error
 // you can check it using status.Code(err) == codes.NotFound
 func (i *ImageResolver) ResolveImageToSha(ref util.DockerImageRef, strategy v1alpha1.Strategy) (util.DockerImageRef, error) {
-	if strategy != v1alpha1.MutableTagStrategy {
-		return util.DockerImageRef{}, fmt.Errorf("Only MutableTagStrategy is currently implemented for artifact registry")
+	// SourceCommitStrategy is a special case of MutableTagStrategy because the tag is the commit
+	if strategy != v1alpha1.MutableTagStrategy && strategy != v1alpha1.SourceCommitStrategy {
+		return util.DockerImageRef{}, fmt.Errorf("Only MutableTagStrategy and SourceCommitStrategy are currently implemented for artifact registry")
 	}
 
 	image, err := FromImageRef(ref)

@@ -1,5 +1,11 @@
 package v1alpha1
 
+import "k8s.io/apimachinery/pkg/runtime/schema"
+
+var (
+	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "Image")
+)
+
 // ImageList is a list of images
 type ImageList struct {
 	APIVersion string   `yaml:"apiVersion"`

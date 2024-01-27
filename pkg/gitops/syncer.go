@@ -363,11 +363,11 @@ func (s *Syncer) RunOnce(force bool) error {
 			// We want to accumulate a list of all unresolved images because its helpful to print a list of them
 			// all in the logs.
 			unResolved = append(unResolved, source)
-			log.Error(err, "Failed to resolve image.", "image", source, "strategy", strategy)
+			log.Error(err, "Failed to resolve image.", "image", taggedImage, "strategy", strategy)
 			continue
 		}
 		pinnedImages[source] = resolved
-		log.V(util.Debug).Info("Resolved image", "source", source, "resolved", resolved)
+		log.V(util.Debug).Info("Resolved image", "source", source, "image", taggedImage, "resolved", resolved)
 	}
 
 	if len(unResolved) > 0 {
@@ -850,7 +850,7 @@ func (s *Syncer) lastStatusFromManifest(syncFile string) *v1alpha1.ManifestSyncS
 func (s *Syncer) getSourceCommit() string {
 	log := s.log
 	// Get the latest commit on the source repo
-	cmd := exec.Command("git", "rev-parse", "--short", "origin/"+s.manifest.Spec.SourceRepo.Branch)
+	cmd := exec.Command("git", "rev-parse", "origin/"+s.manifest.Spec.SourceRepo.Branch)
 	cmd.Dir = filepath.Join(s.workDir, sourceKey)
 
 	output, err := cmd.CombinedOutput()
@@ -1098,6 +1098,9 @@ func (s *Syncer) applyKustomizeFns(hydratedPath string, sourceRoot string, files
 	return d.ApplyFilteredFuncs(funcs.Nodes)
 }
 
+// TODO(jeremy): Having buildImages as a method on Syncer no longer makes sense.
+// We have the Image resource which should be used to build images. We aren't using skaffold to build images
+// so we might just want to delete this code.
 func (s *Syncer) buildImages(sourcePath string, sourceCommit string) error {
 	// Give each run of buildImages a unique id so its easy to group all the messages about image building
 	// for a particular run.

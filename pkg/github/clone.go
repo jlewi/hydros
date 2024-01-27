@@ -26,6 +26,8 @@ type ReposCloner struct {
 	BaseDir string
 }
 
+// Run clones the repository. If the repository has already been cloned then it will fetch the latest changes
+// and checkout the specified branch. Any changes are dropped.
 func (r *ReposCloner) Run(ctx context.Context) error {
 	// loop over the repos and clone them
 	for _, uri := range r.URIs {
@@ -35,6 +37,23 @@ func (r *ReposCloner) Run(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// GetRepoDir the directory where the repository will be cloned
+func (r *ReposCloner) GetRepoDir(uri string) (string, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return "", errors.Wrapf(err, "Could not parse URI %v", uri)
+	}
+	orgRepo, err := ghrepo.FromURL(u)
+	if err != nil {
+		return "", errors.Wrapf(err, "Could not parse URI %v", uri)
+	}
+
+	org := orgRepo.RepoOwner()
+	repo := orgRepo.RepoName()
+	fullDir := filepath.Join(r.BaseDir, u.Hostname(), org, repo)
+	return fullDir, nil
 }
 
 func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
@@ -86,7 +105,10 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 		}
 	}
 
-	fullDir := filepath.Join(r.BaseDir, u.Hostname(), org, repo)
+	fullDir, err := r.GetRepoDir(uri)
+	if err != nil {
+		return err
+	}
 
 	log.Info("Clone configured", "url", url, "appAuth", appAuth, "dir", fullDir)
 
@@ -175,7 +197,6 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 		}
 	}
 
-	//fullBranch := plumbing.ReferenceName(branchRef)
 	checkoutOptions := &git.CheckoutOptions{
 		Force:  dropChanges,
 		Create: false,
