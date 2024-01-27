@@ -58,45 +58,6 @@ Moving to K8s controllers would solve a number of problems
 I think its important to continue to support a local mode. This is useful for development and testing. I think
 this can be achieved by continuing to support `hydros apply` and `hydros takeover`.
 
-### Desired UX
-
-* Hydros resources (`Image`, `ManifestSync`) are co-located with the application they describe
-* Hydros reads the resources directly from the repository
-  * Changes to the resources should be automatically applied
-  * i.e. we should have semantics similar to most GitHub APPs where a user checks in a YAML configuration file
-    and the APP automatically applies it
-
-## Proposal
-
-### Proposed UX
-
-Each repository contains a `hydros.yaml` file in a well known location (root of the repository). This file
-can contain one or more YAML resources. In most cases, the file will contain a `RepoConfig` resource. This
-resource will contain the configuration for the repository.
-
-```yaml
-apiVersion: hydros.sailplane.ai/v1alpha1
-kind: RepoConfig
-metadata:
-  name: hydros
-  namespace: sailplaneai
-spec:
-  globs:
-    - "**/*.yaml"
-  selectors:
-    - matchLabels:
-        env: dev
-```
-
-The combination of `globs` and `selectors` will be used to determine which resources to apply. As follows
-
-* Any files matching the globs will be treated as YAML files and the resources in them will be loaded
-* The resources will be filtered by the selectors
-  * Resources that don't match one of the selectors will be ignored 
-
-The use of selectors is necessary to filter out resources related to other methods of deployment; e.g. doing
-a manual takeover of the dev environment.
-
 ## Alternatives
 
 ### GitHub App
