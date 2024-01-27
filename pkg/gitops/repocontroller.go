@@ -2,10 +2,13 @@ package gitops
 
 import (
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/jlewi/hydros/pkg/github"
+	"github.com/jlewi/hydros/pkg/images"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -21,9 +24,11 @@ import (
 // It will then sync those resources
 type RepoController struct {
 	// directory where repositories should be checked out
-	workDir string
-	config  *v1alpha1.RepoConfig
-	cloner  *github.ReposCloner
+	workDir         string
+	config          *v1alpha1.RepoConfig
+	cloner          *github.ReposCloner
+	imageController *images.Controller
+	gitRepo         *git.Repository
 }
 
 func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoController, error) {
@@ -45,6 +50,11 @@ func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoContro
 		return nil, err
 	}
 
+	imageController, err := images.NewController()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create image controller")
+	}
+
 	cloner := &github.ReposCloner{
 		URIs:    []string{config.Spec.Repo},
 		Manager: manager,
@@ -52,15 +62,18 @@ func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoContro
 	}
 
 	return &RepoController{
-		workDir: workDir,
-		config:  config,
-		cloner:  cloner,
+		workDir:         workDir,
+		config:          config,
+		cloner:          cloner,
+		imageController: imageController,
 	}, nil
 }
 
 func (c *RepoController) Reconcile(ctx context.Context) error {
 	log := util.LogFromContext(ctx)
 	log = log.WithValues("repoConfig", c.config.Metadata.Name)
+	ctx = logr.NewContext(ctx, log)
+
 	if err := c.cloner.Run(ctx); err != nil {
 		return err
 	}
@@ -68,6 +81,31 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 	repoDir, err := c.cloner.GetRepoDir(c.config.Spec.Repo)
 	if err != nil {
 		return err
+	}
+
+	c.gitRepo, err = git.PlainOpenWithOptions(repoDir, &git.PlainOpenOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Error opening git repo")
+	}
+
+	resources, err := c.findResources(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range resources {
+		if err := c.applyResource(ctx, r); err != nil {
+			log.Error(err, "Error applying resource", "path", r.path, "name", r.node.GetName())
+		}
+	}
+	return nil
+}
+
+func (c *RepoController) findResources(ctx context.Context) ([]*resource, error) {
+	log := util.LogFromContext(ctx)
+	repoDir, err := c.cloner.GetRepoDir(c.config.Spec.Repo)
+	if err != nil {
+		return nil, err
 	}
 
 	yamlFiles := make([]string, 0, 10)
@@ -120,7 +158,43 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 			})
 		}
 	}
+	return resources, nil
+}
+
+func (c *RepoController) applyResource(ctx context.Context, r *resource) error {
+	log := util.LogFromContext(ctx)
+	log = log.WithValues("path", r.path, "name", r.node.GetName())
+
+	switch r.node.GetKind() {
+	case v1alpha1.ImageGVK.Kind:
+		return c.applyImage(ctx, r)
+	case v1alpha1.ManifestSyncGVK.Kind:
+		return errors.Errorf("ManifestSync is not yet implemented")
+	default:
+		return errors.Errorf("Unknown kind %v", r.node.GetKind())
+	}
 	return nil
+}
+
+func (c *RepoController) applyImage(ctx context.Context, r *resource) error {
+	log := util.LogFromContext(ctx)
+	log = log.WithValues("path", r.path, "name", r.node.GetName())
+
+	image := &v1alpha1.Image{}
+
+	if err := r.node.YNode().Decode(image); err != nil {
+		return errors.Wrapf(err, "Error decoding image")
+	}
+
+	headRef, err := c.gitRepo.Head()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting head ref")
+	}
+
+	image.Status.SourceCommit += headRef.Hash().String()
+
+	basePath := filepath.Dir(r.path)
+	return c.imageController.Reconcile(ctx, image, basePath)
 }
 
 type resource struct {
