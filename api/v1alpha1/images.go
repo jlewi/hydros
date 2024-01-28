@@ -29,9 +29,19 @@ type ImageSpec struct {
 	// Image is the full path of the image to be built
 	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
 	// So it includes the registry and repository but not the tag or digest
-	Image   string           `yaml:"image,omitempty"`
-	Source  []*Source        `yaml:"source,omitempty"`
-	Builder *ArtifactBuilder `yaml:"builder,omitempty"`
+	Image  string    `yaml:"image,omitempty"`
+	Source []*Source `yaml:"source,omitempty"`
+	// ImageSource are assets pulled from other docker images
+	ImageSource []*ImageSource   `yaml:"imageSource,omitempty"`
+	Builder     *ArtifactBuilder `yaml:"builder,omitempty"`
+}
+
+type ImageSource struct {
+	// Image is the full path of the image to use as a source
+	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
+	// TODO(jeremy): If the tag isn't specified we should look for the same tag at which the new image is being built
+	Image  string    `yaml:"image,omitempty"`
+	Source []*Source `yaml:"source,omitempty"`
 }
 
 // Source is a local path to include as an artifact.

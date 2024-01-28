@@ -131,6 +131,9 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 		Ctx:    ctx,
 	}
 
+	// TODO(jeremy): We should check if there are any sources which are docker images and if they are and they
+	// are missing a tag we should add the sourceCommit tag.
+
 	exists, err := gcsHelper.Exists(gcsPath.ToURI())
 	if err != nil {
 		return errors.Wrapf(err, "Failed to check if tarball exists %s", gcsPath.ToURI())

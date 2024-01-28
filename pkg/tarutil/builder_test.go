@@ -239,3 +239,25 @@ func Test_splitParent(t *testing.T) {
 		})
 	}
 }
+
+func Test_DownloadImage(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "" {
+		t.Skip("Skipping test because running in GHA")
+	}
+
+	tDir, err := os.CreateTemp("", "DownloadImageTest")
+	if err != nil {
+		t.Fatalf("Error creating temp dir %v", err)
+	}
+
+	defer os.RemoveAll(tDir.Name())
+
+	util.SetupLogger("info", true)
+	image := "us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot:latest"
+
+	tarball := filepath.Join(tDir.Name(), "kubepilot.tar")
+	if err := DownloadImage(image, tarball); err != nil {
+		t.Fatalf("Error downloading image %v", err)
+	}
+	t.Logf("Tarball written to %v", tarball)
+}
