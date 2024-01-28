@@ -122,12 +122,12 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 	var wg sync.WaitGroup
 	for _, r := range resources {
 		wg.Add(1)
-		go func() {
-			if err := c.applyResource(ctx, r); err != nil {
+		go func(rNode *resource) {
+			if err := c.applyResource(ctx, rNode); err != nil {
 				log.Error(err, "Error applying resource", "path", r.path, "name", r.node.GetName())
 			}
 			wg.Done()
-		}()
+		}(r)
 	}
 
 	wg.Wait()
