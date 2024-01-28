@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	cb "cloud.google.com/go/cloudbuild/apiv1"
@@ -141,7 +143,25 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	tarFilePath := gcsPath.ToURI()
 	if !exists {
 		log.Info("Creating tarball", "image", image.Spec.Image, "tarball", tarFilePath)
-		if err := tarutil.Build(image, basePath, tarFilePath); err != nil {
+
+		tarSources := make([]*tarutil.TarSource, 0, 1+len(image.Spec.ImageSource))
+
+		if len(image.Spec.ImageSource) > 0 {
+
+			sources, err := c.exportImages(ctx, image)
+			if err != nil {
+				return err
+			}
+			tarSources = append(tarSources, sources...)
+		}
+
+		if len(image.Spec.Source) > 0 {
+			tarSources = append(tarSources, &tarutil.TarSource{
+				Path:   basePath,
+				Source: image.Spec.Source,
+			})
+		}
+		if err := tarutil.Build(tarSources, tarFilePath); err != nil {
 			return errors.Wrapf(err, "Failed to create tarball %s", tarFilePath)
 		}
 	} else {
@@ -226,6 +246,67 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	}
 
 	return nil
+}
+
+// exportImages downloads any images specified as sources
+func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([]*tarutil.TarSource, error) {
+	log := util.LogFromContext(ctx)
+
+	tarResults := make([]*tarutil.TarSource, 0, len(image.Spec.ImageSource))
+	if len(image.Spec.ImageSource) == 0 {
+		return tarResults, nil
+	}
+
+	tmpDir, err := os.MkdirTemp("", "hydrosImageReconciler")
+	if err != nil {
+		return tarResults, errors.Wrapf(err, "Failed to create temp dir")
+	}
+
+	exportErrs := make([]error, len(image.Spec.ImageSource))
+
+	var wg sync.WaitGroup
+	for i, source := range image.Spec.ImageSource {
+		if source.Image == "" {
+			return tarResults, errors.Errorf("ImageSource must specify an image")
+		}
+		imageRef, err := util.ParseImageURL(source.Image)
+		if err != nil {
+			log.Error(err, "failed to parse image URL", "sourceImage", source.Image)
+			return tarResults, err
+		}
+
+		// Construct path to where the image will be saved on disk
+		name := imageRef.Registry + "_" + imageRef.Repo + "_" + imageRef.Tag
+		name = strings.Replace(name, "/", "_", -1) + ".tar"
+
+		imagePath := path.Join(tmpDir, name)
+
+		tarResults = append(tarResults, &tarutil.TarSource{
+			Path:   imagePath,
+			Source: source.Source,
+		})
+		wg.Add(1)
+		// Download the images in parallel
+		go func(index int, s v1alpha1.ImageSource, path string) {
+			defer wg.Done()
+			exportErrs[index] = nil
+			log.Info("Exporting image", "image", s.Image, "imagePath", path)
+			if err := ExportImage(source.Image, source.Image); err != nil {
+				log.Error(err, "Failed to export image", "image", s.Image, "path", path)
+				exportErrs[index] = err
+			}
+		}(i, *source, imagePath)
+	}
+
+	wg.Wait()
+
+	for _, err := range exportErrs {
+		if err != nil {
+			return tarResults, errors.Wrapf(err, "Failed to export one or more images; check logs to see which one")
+		}
+	}
+
+	return tarResults, nil
 }
 
 // ReconcileFile reconciles the images defined in a set of files.
