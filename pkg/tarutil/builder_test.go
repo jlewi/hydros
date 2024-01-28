@@ -245,17 +245,17 @@ func Test_DownloadImage(t *testing.T) {
 		t.Skip("Skipping test because running in GHA")
 	}
 
-	tDir, err := os.CreateTemp("", "DownloadImageTest")
+	tDir, err := os.MkdirTemp("", "DownloadImageTest")
 	if err != nil {
 		t.Fatalf("Error creating temp dir %v", err)
 	}
 
-	defer os.RemoveAll(tDir.Name())
+	defer os.RemoveAll(tDir)
 
 	util.SetupLogger("info", true)
 	image := "us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot:latest"
 
-	tarball := filepath.Join(tDir.Name(), "kubepilot.tar")
+	tarball := filepath.Join(tDir, "kubepilot.tar")
 	if err := DownloadImage(image, tarball); err != nil {
 		t.Fatalf("Error downloading image %v", err)
 	}

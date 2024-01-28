@@ -2,6 +2,8 @@ package images
 
 import (
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/gcrane"
+	"github.com/jlewi/hydros/pkg/util"
 	"os"
 	"path"
 	"path/filepath"
@@ -51,8 +53,14 @@ func (d *ImageDownloader) downloadImagesToDir() error {
 	// Loop over the source images
 	for _, sourceImage := range d.ImageList.Images {
 
+		imageRef, err := util.ParseImageURL(sourceImage)
+		if err != nil {
+			d.Log.Error(err, "failed to parse image URL", "sourceImage", sourceImage)
+			return err
+		}
+
 		// Construct path to where the image will be saved on disk
-		imagePath := path.Join(d.ImageDir, sourceImage)
+		imagePath := path.Join(d.ImageDir, imageRef.Registry, imageRef.Repo)
 
 		// If the filepath already exists on disk and we've been told to skip, then don't download
 		if _, err := os.Stat(imagePath); err == nil && d.SkipIfFileExists {
@@ -82,8 +90,8 @@ func (d *ImageDownloader) downloadImagesToDir() error {
 
 		// Pull sourceImage and write to the imagePath on disk
 		d.Log.Info("Downloading image", "sourceImage", sourceImage, "imagePath", imagePath)
-		err := downloadImage(sourceImage, imagePath)
-		if err != nil {
+
+		if err := downloadImage(sourceImage, imagePath); err != nil {
 			d.Log.Error(err, "downloadImage step failed", "sourceImage", sourceImage, "imagePath", imagePath)
 			return err
 		}
@@ -94,8 +102,9 @@ func (d *ImageDownloader) downloadImagesToDir() error {
 
 // downloadImage uses crane to download the given image reference and write to disk at the provided path
 func downloadImage(imageSrc string, outputPath string) error {
+	options := []crane.Option{crane.WithAuthFromKeychain(gcrane.Keychain)}
 	// Pull the image
-	image, err := crane.Pull(imageSrc)
+	image, err := crane.Pull(imageSrc, options...)
 	if err != nil {
 		return err
 	}
