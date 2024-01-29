@@ -35,8 +35,7 @@ func Test_Build(t *testing.T) {
 
 	type testCase struct {
 		name     string
-		srcSpec  string
-		basePath string
+		source   []*TarSource
 		expected []string
 	}
 
@@ -44,9 +43,18 @@ func Test_Build(t *testing.T) {
 		{
 			// This test case sets the base path to dirA and then we check that we can include
 			// the parent directory
-			name:     "test-relative-paths",
-			srcSpec:  filepath.Join(cwd, "test_data", "image.yaml"),
-			basePath: filepath.Join(cwd, "test_data", "dirA"),
+			name: "test-relative-paths",
+			source: []*TarSource{
+				{
+					Path: filepath.Join(cwd, "test_data", "dirA"),
+					Source: []*v1alpha1.Source{
+						{
+							Src: filepath.Join(cwd, "test_data", "image.yaml"),
+						},
+					},
+				},
+			},
+
 			expected: []string{
 				"file1.txt",
 				"dirB/file2.txt",

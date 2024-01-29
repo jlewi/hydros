@@ -2,10 +2,11 @@ package images
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/gcrane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"os"
 )
 
 // ExportImage uses crane to export an image to a tarball

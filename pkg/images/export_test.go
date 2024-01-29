@@ -1,10 +1,11 @@
 package images
 
 import (
-	"github.com/jlewi/hydros/pkg/util"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/jlewi/hydros/pkg/util"
 )
 
 func Test_DownloadImage(t *testing.T) {

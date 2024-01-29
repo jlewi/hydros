@@ -2,12 +2,13 @@ package images
 
 import (
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/gcrane"
-	"github.com/jlewi/hydros/pkg/util"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/go-containerregistry/pkg/gcrane"
+	"github.com/jlewi/hydros/pkg/util"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/crane"

@@ -1,12 +1,13 @@
 package images
 
 import (
+	"os"
+	"testing"
+
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/util"
 	"go.uber.org/zap"
-	"os"
-	"testing"
 )
 
 func Test_ImageDownloader(t *testing.T) {
