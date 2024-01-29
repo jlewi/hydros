@@ -29,7 +29,7 @@ func ExportImage(src string, tarFilePath string) error {
 	} else {
 		img, err = desc.Image()
 		if err != nil {
-			return fmt.Errorf("pulling Image %s: %w", src, err)
+			return fmt.Errorf("pulling URI %s: %w", src, err)
 		}
 	}
 

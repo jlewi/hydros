@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -75,7 +76,7 @@ func NewController() (*Controller, error) {
 // Reconcile an image. This will build the image if necessary and resolve the image to a sha.
 // Status is updated with status about the image.
 // basePath is the basePath to resolve paths against
-func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, basePath string) error {
+func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error {
 	log := util.LogFromContext(ctx)
 	log.Info("Reconciling image", "image", image.Metadata.Name)
 
@@ -101,7 +102,7 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	}
 
 	if !gcp.IsArtifactRegistry(imageRef.Registry) {
-		return errors.Errorf("Image %v is not in Artifact Registry", imageRef)
+		return errors.Errorf("URI %v is not in Artifact Registry", imageRef)
 	}
 
 	// Tag should be the image
@@ -111,7 +112,7 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	resolved, err := c.resolver.ResolveImageToSha(*imageRef, v1alpha1.MutableTagStrategy)
 
 	if err == nil {
-		log.Info("Image already exists", "image", image.Spec.Image, "sha", resolved.Sha)
+		log.Info("URI already exists", "image", image.Spec.Image, "sha", resolved.Sha)
 		image.Status.URI = resolved.ToURL()
 		image.Status.SHA = resolved.Sha
 		return nil
@@ -141,31 +142,21 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	if !exists {
 		log.Info("Creating tarball", "image", image.Spec.Image, "tarball", tarFilePath)
 
-		tarSources := make([]*tarutil.TarSource, 0, 1+len(image.Spec.ImageSource))
-
-		if len(image.Spec.ImageSource) > 0 {
-
-			sources, err := c.exportImages(ctx, image)
-			if err != nil {
-				return err
-			}
-			tarSources = append(tarSources, sources...)
+		// N.B. we need export any docker images specified as sources
+		// This will rewrite the image.Spec.ImageSource to point to the tarballs
+		transformed, err := c.exportImages(ctx, image)
+		if err != nil {
+			return err
 		}
 
-		if len(image.Spec.Source) > 0 {
-			tarSources = append(tarSources, &tarutil.TarSource{
-				Path:   basePath,
-				Source: image.Spec.Source,
-			})
-		}
-		if err := tarutil.Build(tarSources, tarFilePath); err != nil {
+		if err := tarutil.Build(transformed, tarFilePath); err != nil {
 			return errors.Wrapf(err, "Failed to create tarball %s", tarFilePath)
 		}
 	} else {
 		log.Info("Tarball exists", "image", image.Spec.Image, "tarball", tarFilePath)
 	}
 
-	log.Info("Image doesn't exist; building", "image", image.Spec.Image, "imageRef", imageRef)
+	log.Info("URI doesn't exist; building", "image", image.Spec.Image, "imageRef", imageRef)
 
 	build := gcp.DefaultBuild()
 
@@ -246,34 +237,38 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 }
 
 // exportImages downloads any images specified as sources
-func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([]*tarutil.TarSource, error) {
+func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([]*v1alpha1.ImageSource, error) {
 	log := util.LogFromContext(ctx)
 
-	tarResults := make([]*tarutil.TarSource, 0, len(image.Spec.ImageSource))
-	if len(image.Spec.ImageSource) == 0 {
-		return tarResults, nil
-	}
+	tarResults := make([]*v1alpha1.ImageSource, 0, len(image.Spec.Source))
 
 	tmpDir, err := os.MkdirTemp("", "hydrosImageReconciler")
 	if err != nil {
 		return tarResults, errors.Wrapf(err, "Failed to create temp dir")
 	}
 
-	exportErrs := make([]error, len(image.Spec.ImageSource))
-
+	exportErrs := make([]error, 0, len(image.Spec.Source))
+	numToExport := 0
 	var wg sync.WaitGroup
-	for i, source := range image.Spec.ImageSource {
-		if source.Image == "" {
-			return tarResults, errors.Errorf("ImageSource must specify an image")
-		}
-		imageRef, err := util.ParseImageURL(source.Image)
+	for i, source := range image.Spec.Source {
+		u, err := url.Parse(source.URI)
 		if err != nil {
-			log.Error(err, "failed to parse image URL", "sourceImage", source.Image)
+			return tarResults, errors.Wrapf(err, "Failed to parse URI %v", source.URI)
+		}
+
+		if u.Scheme != "docker" {
+			tarResults = append(tarResults, source)
+			continue
+		}
+
+		imageRef, err := util.ParseImageURL(u.Path)
+		if err != nil {
+			log.Error(err, "failed to parse image URL", "sourceImage", u.Path)
 			return tarResults, err
 		}
 
 		if imageRef.Tag == "" {
-			log.Info("Image doesn't have a tag; setting to sourceCommit", "image", imageRef)
+			log.Info("URI doesn't have a tag; setting to sourceCommit", "image", imageRef)
 			imageRef.Tag = image.Status.SourceCommit
 		}
 
@@ -283,18 +278,18 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 
 		imagePath := path.Join(tmpDir, name)
 
-		tarResults = append(tarResults, &tarutil.TarSource{
-			Path:   imagePath,
-			Source: source.Source,
-		})
+		newSource := *source
+		newSource.URI = "file://" + imagePath
+		tarResults = append(tarResults, &newSource)
+		numToExport += 1
 		wg.Add(1)
 		// Download the images in parallel
 		go func(index int, s v1alpha1.ImageSource, path string) {
 			defer wg.Done()
 			exportErrs[index] = nil
-			log.Info("Exporting image", "image", s.Image, "imagePath", path)
-			if err := ExportImage(s.Image, path); err != nil {
-				log.Error(err, "Failed to export image", "image", s.Image, "path", path)
+			log.Info("Exporting image", "image", s.URI, "imagePath", path)
+			if err := ExportImage(s.URI, path); err != nil {
+				log.Error(err, "Failed to export image", "image", s.URI, "path", path)
 				exportErrs[index] = err
 			}
 		}(i, *source, imagePath)
@@ -302,7 +297,8 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 
 	wg.Wait()
 
-	for _, err := range exportErrs {
+	for i := 0; i < numToExport; i++ {
+		err := exportErrs[i]
 		if err != nil {
 			return tarResults, errors.Wrapf(err, "Failed to export one or more images; check logs to see which one")
 		}

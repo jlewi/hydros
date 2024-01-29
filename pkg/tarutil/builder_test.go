@@ -16,7 +16,6 @@ import (
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 func Test_Build(t *testing.T) {
@@ -35,7 +34,7 @@ func Test_Build(t *testing.T) {
 
 	type testCase struct {
 		name     string
-		source   []*TarSource
+		source   []*v1alpha1.ImageSource
 		expected []string
 	}
 
@@ -44,12 +43,15 @@ func Test_Build(t *testing.T) {
 			// This test case sets the base path to dirA and then we check that we can include
 			// the parent directory
 			name: "test-relative-paths",
-			source: []*TarSource{
+			source: []*v1alpha1.ImageSource{
 				{
-					Path: filepath.Join(cwd, "test_data", "dirA"),
-					Source: []*v1alpha1.Source{
+					URI: "file://" + filepath.Join(cwd, "test_data", "dirA"),
+					SourceMappings: []*v1alpha1.SourceMapping{
 						{
-							Src: filepath.Join(cwd, "test_data", "image.yaml"),
+							Src: "**/*.txt",
+						},
+						{
+							Src: "../dirB/**/*.txt",
 						},
 					},
 				},
@@ -64,18 +66,8 @@ func Test_Build(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			f, err := os.Open(c.srcSpec)
-			if err != nil {
-				t.Fatalf("Error opening spec %v", err)
-			}
-
-			image := &v1alpha1.Image{}
-			if err := yaml.NewDecoder(f).Decode(image); err != nil {
-				t.Fatalf("Error decoding image %v", err)
-			}
-
 			oFile := filepath.Join(tDir, "test.tar.gz")
-			if err := Build(image, c.basePath, oFile); err != nil {
+			if err := Build(c.source, oFile); err != nil {
 				t.Fatalf("Error building tarball for image %+v", err)
 			}
 

@@ -32,7 +32,7 @@ type applyOptions struct {
 func NewApplyCmd() *cobra.Command {
 	aOptions := applyOptions{}
 
-	// TODO(jeremy): We should update apply to support the Image resource.
+	// TODO(jeremy): We should update apply to support the URI resource.
 	applyCmd := &cobra.Command{
 		Use:   "apply <resource.yaml> <resourceDir> <resource.yaml> ...",
 		Short: "Apply the specified resource.",

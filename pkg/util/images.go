@@ -41,6 +41,7 @@ func (d *DockerImageRef) GetAwsRegistryID() string {
 // ParseImageURL parses the URL refering to a docker image
 //
 // TODO(jeremy): We should support shas as well
+// TODO(jeremy): Should we support optionally having a scheme of DockerScheme?
 func ParseImageURL(url string) (*DockerImageRef, error) {
 	r := &DockerImageRef{}
 

@@ -3,7 +3,7 @@ package v1alpha1
 import "k8s.io/apimachinery/pkg/runtime/schema"
 
 var (
-	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "Image")
+	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "URI")
 )
 
 // ImageList is a list of images
@@ -14,6 +14,15 @@ type ImageList struct {
 
 	Images []string `yaml:"images,omitempty"`
 }
+
+type ImageSourceType string
+
+const (
+	// ImageSourceTypeDocker is a docker image
+	ImageSourceTypeDocker ImageSourceType = "docker"
+	// ImageSourceTypeDir is a local directory
+	ImageSourceTypeDir ImageSourceType = "dir"
+)
 
 // Image defines an image to be continuously built
 type Image struct {
@@ -29,22 +38,30 @@ type ImageSpec struct {
 	// Image is the full path of the image to be built
 	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
 	// So it includes the registry and repository but not the tag or digest
-	Image  string    `yaml:"image,omitempty"`
-	Source []*Source `yaml:"source,omitempty"`
-	// ImageSource are assets pulled from other docker images
-	ImageSource []*ImageSource   `yaml:"imageSource,omitempty"`
-	Builder     *ArtifactBuilder `yaml:"builder,omitempty"`
+	Image string `yaml:"image,omitempty"`
+	// Source are the source for the image
+	Source  []*ImageSource   `yaml:"imageSource,omitempty"`
+	Builder *ArtifactBuilder `yaml:"builder,omitempty"`
 }
 
 type ImageSource struct {
-	// Image is the full path of the image to use as a source
+	// URI is the path of the resource to use as a source
+	// This can be a local path or a docker image. If its a local path relative paths will be interpreted
+	// relative to the location of the YAML file containing the resource.
 	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
+	//
+	// Use file:// to specify a local path e.g. file:///path/to/dir. Note the third "/" indicates its an absolute path
+	// If its "//" then its a relative path. I'm not sure it makes sense to support relative paths because what
+	// would they be relative to?
 	// TODO(jeremy): If the tag isn't specified we should look for the same tag at which the new image is being built
-	Image  string    `yaml:"image,omitempty"`
-	Source []*Source `yaml:"source,omitempty"`
+	URI string `yaml:"uri,omitempty"`
+	// Type specifies the type of image source
+	// TODO(jeremy): Can we just get rid of this and rely on scheme in the URI? e.g. file:/// or docker://
+	Type           ImageSourceType  `yaml:"type,omitempty"`
+	SourceMappings []*SourceMapping `yaml:"source,omitempty"`
 }
 
-// Source is a local path to include as an artifact.
+// SourceMapping specifies how source files are mapped into the destination artifact
 // It is inspired by skaffold; https://skaffold.dev/docs/references/yaml/
 // When building images from a YAML file the src is a relative path to the location of the YAML file.
 // src can start with a parent prefix e.g. ".." to obtain files higher in the directory tree relative to the
@@ -54,7 +71,7 @@ type ImageSource struct {
 // /p/b/file.txt
 // And image.yaml contains src "../b/file.txt" then the file will be copied to b/file.txt by default in the
 // tarball
-type Source struct {
+type SourceMapping struct {
 	// Src is a glob pattern to match local paths against. Directories should be delimited by / on all platforms.
 	// e.g. "css/**/*.css"
 	Src string `yaml:"src,omitempty"`

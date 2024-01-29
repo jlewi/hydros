@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"io"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,26 +20,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// TarSource describes the source to include in a tarball
-//
-// TODO(jeremy): Should we directly support using docker images as a source?
-// Currently we don't because the code to export images to a tarball is in the images package. If we moved that
-// code into the tarutil package then we could directly support using docker images as a source but that would
-// create a circular dependency.
-type TarSource struct {
-	// Path is the path to resolve against.
-	// It can be a filesystem path in which case sources are matched relative to that path
-	// It can be a tarball in which case sources are matched against the contents of the tarball
-	Path   string
-	Source []*v1alpha1.Source
-}
-
 // Build builds an archive from the manifest
 // basePath is the basePath to resolve relative paths against
 // tarball is the path to the tarball to create
 // fileSource is a list of files to include in the tarball
 // tarSource is a list of tarballs and corresponding matches to include
-func Build(tarSources []*TarSource, tarFilePath string) error {
+func Build(tarSources []*v1alpha1.ImageSource, tarFilePath string) error {
 	log := zapr.NewLogger(zap.L())
 
 	factory := &files.Factory{}
@@ -72,25 +59,23 @@ func Build(tarSources []*TarSource, tarFilePath string) error {
 	for _, s := range tarSources {
 
 		isTar := false
-
 		for _, suffix := range tarSuffixes {
-			if strings.HasSuffix(s.Path, suffix) {
+			if strings.HasSuffix(s.URI, suffix) {
 				isTar = true
 				break
 			}
 		}
 
 		if isTar {
-			log.Info("Adding tarball", "tarball", s.Path, "pattern", s.Source)
+			log.Info("Adding tarball", "tarball", s.URI, "pattern", s.SourceMappings)
 			if err := copyTarBall(tw, s); err != nil {
-				log.Error(err, "Error copying tarball", "tarball", s.Path, "source", s.Source)
+				log.Error(err, "Error copying tarball", "tarball", s.URI, "source", s.SourceMappings)
 				return err
 			}
 			continue
 		} else {
-			log.Info("Adding base path", "path", s.Path, "pattern", s.Source)
-			if err := copyBasePath(tw, s); err != nil {
-				log.Error(err, "Error copying base path", "path", s.Path, "pattern", s.Source)
+			if err := copyLocalPath(tw, s); err != nil {
+				log.Error(err, "Error copying local path", "source", s)
 				return err
 			}
 		}
@@ -99,11 +84,23 @@ func Build(tarSources []*TarSource, tarFilePath string) error {
 	return nil
 }
 
-func copyBasePath(tw *tar.Writer, s *TarSource) error {
+func copyLocalPath(tw *tar.Writer, s *v1alpha1.ImageSource) error {
 	log := zapr.NewLogger(zap.L())
-	for _, a := range s.Source {
+
+	u, err := url.Parse(s.URI)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to parse URI %v", s.URI)
+	}
+
+	if u.Scheme != "file" {
+		return errors.Errorf("Scheme %v is not supported", u.Scheme)
+	}
+
+	basePath := u.Path
+	for _, a := range s.SourceMappings {
 		log.Info("Adding asset", "asset", a)
-		sBase := s.Path
+		// TODO(jeremy): Do we need to handle the "file://" prefix?
+		sBase := basePath
 		// We need to adjust the basepath if we have a relative path
 		parent, glob := splitIntoParent(a.Src)
 
@@ -135,17 +132,20 @@ func copyBasePath(tw *tar.Writer, s *TarSource) error {
 // glob is a glob pattern to match against the tarball
 // strip is a path prefix to strip from all paths
 // destPrefix is a path prefix to add to all paths
-func copyTarBall(tw *tar.Writer, s *TarSource) error {
+func copyTarBall(tw *tar.Writer, s *v1alpha1.ImageSource) error {
 	log := zapr.NewLogger(zap.L())
-	// Open the tarball file
-	file, err := os.Open(s.Path)
+	factory := &files.Factory{}
+	helper, err := factory.Get(s.URI)
 	if err != nil {
-		return errors.Wrapf(err, "Error opening tarball %v", s.Path)
+		return errors.Wrapf(err, "Error opening tarball %v", s.URI)
 	}
-	defer file.Close()
+	reader, err := helper.NewReader(s.URI)
+	if err != nil {
+		return errors.Wrapf(err, "Error opening tarball %v", s.URI)
+	}
 
 	// Create a tar reader
-	tarReader := tar.NewReader(file)
+	tarReader := tar.NewReader(reader)
 
 	// Iterate over each file in the tarball
 	for {
@@ -161,8 +161,8 @@ func copyTarBall(tw *tar.Writer, s *TarSource) error {
 		}
 
 		// Check if any of the patterns match
-		var source *v1alpha1.Source
-		for _, s := range s.Source {
+		var source *v1alpha1.SourceMapping
+		for _, s := range s.SourceMappings {
 			isMatch, err := doublestar.Match(s.Src, header.Name)
 			if err != nil {
 				return errors.Wrapf(err, "Error matching glob %v against %v", s.Src, header.Name)

@@ -76,7 +76,7 @@ func AddTagsToImage(sess *session.Session, image string, tags []string) error {
 			if aerr, ok := err.(awserr.Error); ok {
 				switch aerr.Code() {
 				case ecr.ErrCodeImageAlreadyExistsException:
-					log.Info("Image already has tag", "image", image, "tag", label)
+					log.Info("URI already has tag", "image", image, "tag", label)
 				default:
 					return errors.Wrapf(err, "Failed to resolve image to sha; image: %v", image)
 				}
