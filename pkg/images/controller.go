@@ -133,9 +133,6 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 		Ctx:    ctx,
 	}
 
-	// TODO(jeremy): We should check if there are any sources which are docker images and if they are and they
-	// are missing a tag we should add the sourceCommit tag.
-
 	exists, err := gcsHelper.Exists(gcsPath.ToURI())
 	if err != nil {
 		return errors.Wrapf(err, "Failed to check if tarball exists %s", gcsPath.ToURI())
@@ -275,6 +272,11 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 			return tarResults, err
 		}
 
+		if imageRef.Tag == "" {
+			log.Info("Image doesn't have a tag; setting to sourceCommit", "image", imageRef)
+			imageRef.Tag = image.Status.SourceCommit
+		}
+
 		// Construct path to where the image will be saved on disk
 		name := imageRef.Registry + "_" + imageRef.Repo + "_" + imageRef.Tag
 		name = strings.Replace(name, "/", "_", -1) + ".tar"
@@ -291,7 +293,7 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 			defer wg.Done()
 			exportErrs[index] = nil
 			log.Info("Exporting image", "image", s.Image, "imagePath", path)
-			if err := ExportImage(source.Image, source.Image); err != nil {
+			if err := ExportImage(s.Image, path); err != nil {
 				log.Error(err, "Failed to export image", "image", s.Image, "path", path)
 				exportErrs[index] = err
 			}
