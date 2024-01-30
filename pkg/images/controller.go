@@ -153,6 +153,9 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 		return errors.Wrapf(err, "Failed to check if tarball exists %s", gcsPath.ToURI())
 	}
 	tarFilePath := gcsPath.ToURI()
+
+	// TODO(jeremy): It might be better to delete the GCSPath if it exists and then recreate it. This way if the logic
+	// to create the tarball changes it gets picked up.
 	if !exists {
 		log.Info("Creating tarball", "image", image.Spec.Image, "tarball", tarFilePath)
 
@@ -183,6 +186,10 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 		imageBase + ":latest",
 		imageBase + ":" + version,
 	}
+
+	// Add some build tags.
+	imageTag := strings.Replace(imageBase, "/", "_", -1)
+	build.Tags = []string{imageTag, "commit-" + image.Status.SourceCommit[0:7], "version-" + version}
 
 	gcp.AddImages(build, images)
 	gcp.AddBuildTags(build, image.Status.SourceCommit, version)
@@ -286,7 +293,7 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 	exportErrs := make([]error, len(image.Spec.Source))
 	numToExport := 0
 	var wg sync.WaitGroup
-	for i, source := range image.Spec.Source {
+	for _, source := range image.Spec.Source {
 		if !util.IsDockerURI(source.URI) {
 			tarResults = append(tarResults, source)
 			continue
@@ -314,7 +321,6 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 		newSource := *source
 		newSource.URI = "file://" + imagePath
 		tarResults = append(tarResults, &newSource)
-		numToExport += 1
 		wg.Add(1)
 		// Download the images in parallel
 		go func(index int, imageUri, path string) {
@@ -325,18 +331,25 @@ func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([
 				log.Error(err, "Failed to export image", "image", imageUri, "path", path)
 				exportErrs[index] = err
 			}
-		}(i, imageURI, imagePath)
+		}(numToExport, imageURI, imagePath)
+		// Need to increment after the go routine is called.
+		numToExport += 1
 	}
 
 	wg.Wait()
 
+	finalErr := &helpers.ListOfErrors{}
+
 	for i := 0; i < numToExport; i++ {
 		err := exportErrs[i]
 		if err != nil {
-			return tarResults, errors.Wrapf(err, "Failed to export one or more images; check logs to see which one")
+			finalErr.AddCause(err)
 		}
 	}
-
+	if len(finalErr.Causes) > 0 {
+		finalErr.Final = errors.Errorf("Failed to export %d images", len(finalErr.Causes))
+		return tarResults, finalErr
+	}
 	return tarResults, nil
 }
 
