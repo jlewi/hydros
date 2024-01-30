@@ -19,22 +19,16 @@ metadata:
 spec:
   image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros
   source:
-    # Leave it at the root of the context because that's what hydros will look for.
-    - src: Dockerfile
-    # Specify individual directories so we don't include hidden directories
-    - src: "go.mod"
-      dest: "kubedr"
-    - src: "go.sum"
-      dest: "kubedr"
-    - src: "api/**/*.go"
-      dest: "kubedr"
-    - src: "cmd/**/*.go"
-      dest: "kubedr"
-    - src: "pkg/**/*"
-      dest: "kubedr"
-    - src: "test/**/*.go"
-      dest: "kubedr"
-    - src: "../vendor/**/*"
+  - uri: https://github.com/sailplaneai/code.git
+    mappings:
+      # Leave it at the root of the context because that's what hydros will look for.
+      - src: /gilfoyle/Dockerfile
+        strip: gilfoyle
+      - src: "/gilfoyle/*.sh"
+        strip: gilfoyle
+    - uri: docker://us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot
+      mappings:
+        - src: /kp
   builder:
     gcb:
       project: dev-sailplane
