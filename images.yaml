@@ -6,14 +6,16 @@ metadata:
 spec:
   image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros
   source:
-    - src: Dockerfile
-    # Specify individual directories so we don't include hidden directories
-    - src: "go.mod"
-    - src: "go.sum"
-    - src: "api/**/*.go"
-    - src: "cmd/**/*.go"
-    - src: "pkg/**/*.go"
-    - src: "test/**/*.go"
+    - uri: https://github.com/jlewi/hydros.git
+      mappings:
+      - src: Dockerfile
+      # Specify individual directories so we don't include hidden directories
+      - src: "go.mod"
+      - src: "go.sum"
+      - src: "api/**/*.go"
+      - src: "cmd/**/*.go"
+      - src: "pkg/**/*.go"
+      - src: "test/**/*.go"
   builder:
     gcb:
       project: dev-sailplane

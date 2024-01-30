@@ -26,9 +26,9 @@ spec:
         strip: gilfoyle
       - src: "/gilfoyle/*.sh"
         strip: gilfoyle
-    - uri: docker://us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot
-      mappings:
-        - src: /kp
+  - uri: docker://us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot
+    mappings:
+      - src: /kp
   builder:
     gcb:
       project: dev-sailplane
