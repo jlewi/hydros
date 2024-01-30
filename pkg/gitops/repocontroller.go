@@ -133,7 +133,7 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 		wg.Add(1)
 		go func(rNode *resource) {
 			if err := c.applyResource(ctx, rNode); err != nil {
-				log.Error(err, "Error applying resource", "path", r.path, "name", r.node.GetName())
+				log.Error(err, "Error applying resource", "path", rNode.path, "name", rNode.node.GetName())
 			}
 			wg.Done()
 		}(r)
