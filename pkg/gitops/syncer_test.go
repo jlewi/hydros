@@ -106,7 +106,7 @@ func Test_DidImagesChange(t *testing.T) {
 			},
 			expected: []string{"some-repo/some-image:5678"},
 		},
-		// New Image
+		// New URI
 		{
 			lastSync: []v1alpha1.PinnedImage{
 				{
@@ -223,7 +223,7 @@ func Test_GetPinStrategy(t *testing.T) {
 		actual := s.getPinStrategy(c.image)
 
 		if actual != c.expected {
-			t.Errorf("Image: %v; Got %v; want %v;", c.image, actual, c.expected)
+			t.Errorf("URI: %v; Got %v; want %v;", c.image, actual, c.expected)
 		}
 	}
 }

@@ -14,27 +14,21 @@ Here's an example
 kind: Image
 apiVersion: hydros.sailplane.ai/v1alpha1
 metadata:
-  name: kp
-  namespace: kubepilot
+  name: hydros
+  namespace: hydros
 spec:
   image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros
   source:
-    # Leave it at the root of the context because that's what hydros will look for.
-    - src: Dockerfile
-    # Specify individual directories so we don't include hidden directories
-    - src: "go.mod"
-      dest: "kubedr"
-    - src: "go.sum"
-      dest: "kubedr"
-    - src: "api/**/*.go"
-      dest: "kubedr"
-    - src: "cmd/**/*.go"
-      dest: "kubedr"
-    - src: "pkg/**/*"
-      dest: "kubedr"
-    - src: "test/**/*.go"
-      dest: "kubedr"
-    - src: "../vendor/**/*"
+    - uri: https://github.com/jlewi/hydros.git
+      mappings:
+        - src: Dockerfile
+        # Specify individual directories so we don't include hidden directories
+        - src: "go.mod"
+        - src: "go.sum"
+        - src: "api/**/*.go"
+        - src: "cmd/**/*.go"
+        - src: "pkg/**/*.go"
+        - src: "test/**/*.go"
   builder:
     gcb:
       project: dev-sailplane
@@ -48,8 +42,13 @@ Currently only the GCB builder is supported.
 The context for the image is defined by the source field. Each entry in the source field specifies files
 that will be copied into the context. The source field is an array of objects with the following fields:
 
+* uri: The URI of the source resource. This can be a git repository or docker image.
+  * For git repositories the URI should be the URL of the repository e.g. `https://github.com/jlewi/hydros.git`
+  * For docker images the URI should be the image name with the scheme `docker://` e.g. `docker://gcr.io/dev-sailplane/hydros:latest
+* mappings: An array of mappings specifying files to be copied into the context.
+
 * src: This is a glob expression matching files to be copied into the context. The glob expression is relative to the
-  directory containing the image definition file.
+  root of the resource (e.g. the repository or the docker image). The following glob expressions are supported:
   * Double star `**` can be used to match all subdirectories
   * You can use `..` to go up the directory tree to match files located in parent directories of the `.yaml` file
 * dest: This is the destination directory for the files. 
@@ -57,18 +56,12 @@ that will be copied into the context. The source field is an array of objects wi
 
 The location of the files inside the produced context (tarball) is as follows
 
-```
-basePath = dir(imageDefinitionFile)
-rPath = path of matched file relative to basePath
-strippedRPath = strip rPath of prefix 
-destPath = dest + stripPipedRpath
-```
-
-In the case where `src` begins with `..` basePath is adjusted to be the parent directory.
+Typically the first source will be the git repository containing the source code.
 
 ### Dockerfile
 
-Hydros currently requires the Dockerfile to be named `Dockerfile` and located at the root of the context.
+By default Hydros assumes the Dockerfile to be named `Dockerfile` and located at the root of the context. However,
+you can specify the path to the Dockerfile using the `dockerfile` field in the `gcb` section.
 
 ### Docker build args
 
@@ -93,4 +86,7 @@ To build an image you can use the `hydros build` command
 hydros build ~/git_roboweb/kubedr/image.yaml
 ```
 
-If an image already exists in the registry with the same tag as the current commit, the image will not be rebuilt.
+* If an image already exists in the registry with the same tag as the current commit, the image will not be rebuilt.
+* If the repository is dirty Hydros will commit the changes and then build the image
+* Hydros will automatically detect if the file is located in a git repository that matches one of the sources and 
+  use the commit hash as the tag.

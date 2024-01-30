@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/jlewi/hydros/pkg/github/ghrepo"
 
 	cb "cloud.google.com/go/cloudbuild/apiv1"
 	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -30,12 +34,24 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// GitRepoRef is a reference to a git repository.
+// TODO(jeremy): Is this neccessary? Can we retrieve the Repo from the work tree?
+// I don't think we want to always reconstruct the workTree from gitRepos because that could be expensive
+// in particular updating the ignore patterns is expensive.
+type GitRepoRef struct {
+	Repo *git.Repository
+	W    *git.Worktree
+}
+
 // Controller for images. A controller is capable of building images and resolving images to shas.
 type Controller struct {
 	resolver  *gcp.ImageResolver
 	cbClient  *cb.Client
 	opsClient *longrunning.OperationsClient
 	gcsClient *storage.Client
+
+	// pointers to one or more repositories that have already been cloned.
+	localRepos []GitRepoRef
 }
 
 func NewController() (*Controller, error) {
@@ -63,30 +79,27 @@ func NewController() (*Controller, error) {
 	}
 
 	return &Controller{
-		resolver:  resolver,
-		opsClient: c,
-		cbClient:  client,
-		gcsClient: gcsClient,
+		resolver:   resolver,
+		opsClient:  c,
+		cbClient:   client,
+		gcsClient:  gcsClient,
+		localRepos: make([]GitRepoRef, 0),
 	}, nil
 }
 
 // Reconcile an image. This will build the image if necessary and resolve the image to a sha.
 // Status is updated with status about the image.
 // basePath is the basePath to resolve paths against
-func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, basePath string) error {
+func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error {
 	log := util.LogFromContext(ctx)
 	log.Info("Reconciling image", "image", image.Metadata.Name)
 
+	if errs, valid := image.IsValid(); !valid {
+		return errors.New(errs)
+	}
+
 	project := image.Spec.Builder.GCB.Project
 	bucket := image.Spec.Builder.GCB.Bucket
-
-	if project == "" {
-		return errors.New("Can't build image; project must be set")
-	}
-
-	if bucket == "" {
-		return errors.New("Can't build image; bucket must be set")
-	}
 
 	if image.Status.SourceCommit == "" {
 		return errors.New("Can't build image; sourceCommit must be set")
@@ -99,7 +112,7 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	}
 
 	if !gcp.IsArtifactRegistry(imageRef.Registry) {
-		return errors.Errorf("Image %v is not in Artifact Registry", imageRef)
+		return errors.Errorf("URI %v is not in Artifact Registry", imageRef)
 	}
 
 	// Tag should be the image
@@ -109,7 +122,7 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	resolved, err := c.resolver.ResolveImageToSha(*imageRef, v1alpha1.MutableTagStrategy)
 
 	if err == nil {
-		log.Info("Image already exists", "image", image.Spec.Image, "sha", resolved.Sha)
+		log.Info("URI already exists", "image", image.Spec.Image, "sha", resolved.Sha)
 		image.Status.URI = resolved.ToURL()
 		image.Status.SHA = resolved.Sha
 		return nil
@@ -118,6 +131,11 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	if status.Code(err) != codes.NotFound {
 		log.Error(err, "There was an error checking if the image already exists")
 		return err
+	}
+
+	// Replace remotes with local directories if the remotes correspond to the current directory
+	if err := c.replaceRemotes(ctx, image); err != nil {
+		return errors.Wrapf(err, "Failed to replace remotes")
 	}
 
 	// Create the tarball
@@ -136,16 +154,27 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 		return errors.Wrapf(err, "Failed to check if tarball exists %s", gcsPath.ToURI())
 	}
 	tarFilePath := gcsPath.ToURI()
+
+	// TODO(jeremy): It might be better to delete the GCSPath if it exists and then recreate it. This way if the logic
+	// to create the tarball changes it gets picked up.
 	if !exists {
 		log.Info("Creating tarball", "image", image.Spec.Image, "tarball", tarFilePath)
-		if err := tarutil.Build(image, basePath, tarFilePath); err != nil {
+
+		// N.B. we need export any docker images specified as sources
+		// This will rewrite the image.Spec.ImageSource to point to the tarballs
+		transformed, err := c.exportImages(ctx, image)
+		if err != nil {
+			return err
+		}
+
+		if err := tarutil.Build(transformed, tarFilePath); err != nil {
 			return errors.Wrapf(err, "Failed to create tarball %s", tarFilePath)
 		}
 	} else {
 		log.Info("Tarball exists", "image", image.Spec.Image, "tarball", tarFilePath)
 	}
 
-	log.Info("Image doesn't exist; building", "image", image.Spec.Image, "imageRef", imageRef)
+	log.Info("URI doesn't exist; building", "image", image.Spec.Image, "imageRef", imageRef)
 
 	build := gcp.DefaultBuild()
 
@@ -159,8 +188,19 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 		imageBase + ":" + version,
 	}
 
+	// Add some build tags.
+	imageTag := strings.Replace(imageBase, "/", "_", -1)
+	build.Tags = []string{imageTag, "commit-" + image.Status.SourceCommit[0:7], "version-" + version}
+
 	gcp.AddImages(build, images)
 	gcp.AddBuildTags(build, image.Status.SourceCommit, version)
+
+	dockerFile := "Dockerfile"
+	if image.Spec.Builder.GCB.Dockerfile != "" {
+		dockerFile = image.Spec.Builder.GCB.Dockerfile
+	}
+	gcp.AddKanikoArgs(build, []string{"--dockerfile=" + dockerFile})
+
 	build.Source = &cbpb.Source{
 		Source: &cbpb.Source_StorageSource{
 			StorageSource: &cbpb.StorageSource{
@@ -225,6 +265,141 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image, baseP
 	return nil
 }
 
+// SetLocalRepos sets the local repositories to use when resolving images
+func (c *Controller) SetLocalRepos(repos []GitRepoRef) error {
+	c.localRepos = repos
+	for i, r := range repos {
+		if r.W == nil {
+			w, err := r.Repo.Worktree()
+			if err != nil {
+				return errors.Wrapf(err, "Error getting worktree for repo %v", r.Repo)
+			}
+			c.localRepos[i].W = w
+		}
+	}
+	return nil
+}
+
+// exportImages downloads any images specified as sources
+func (c *Controller) exportImages(ctx context.Context, image *v1alpha1.Image) ([]*v1alpha1.ImageSource, error) {
+	log := util.LogFromContext(ctx)
+
+	tarResults := make([]*v1alpha1.ImageSource, 0, len(image.Spec.Source))
+
+	tmpDir, err := os.MkdirTemp("", "hydrosImageReconciler")
+	if err != nil {
+		return tarResults, errors.Wrapf(err, "Failed to create temp dir")
+	}
+
+	exportErrs := make([]error, len(image.Spec.Source))
+	numToExport := 0
+	var wg sync.WaitGroup
+	for _, source := range image.Spec.Source {
+		if !util.IsDockerURI(source.URI) {
+			tarResults = append(tarResults, source)
+			continue
+		}
+
+		imageRef, err := util.ParseImageURL(source.URI)
+		if err != nil {
+			log.Error(err, "failed to parse image URL", "sourceImage", source.URI)
+			return tarResults, err
+		}
+
+		if imageRef.Tag == "" {
+			log.Info("URI doesn't have a tag; setting to sourceCommit", "image", imageRef)
+			imageRef.Tag = image.Status.SourceCommit
+		}
+
+		imageURI := imageRef.ToURL()
+
+		// Construct path to where the image will be saved on disk
+		name := imageRef.Registry + "_" + imageRef.Repo + "_" + imageRef.Tag
+		name = strings.Replace(name, "/", "_", -1) + ".tar"
+
+		imagePath := path.Join(tmpDir, name)
+
+		newSource := *source
+		newSource.URI = "file://" + imagePath
+		tarResults = append(tarResults, &newSource)
+		wg.Add(1)
+		// Download the images in parallel
+		go func(index int, imageUri, path string) {
+			defer wg.Done()
+			exportErrs[index] = nil
+			log.Info("Exporting image", "image", imageUri, "imagePath", path)
+			if err := ExportImage(imageUri, path); err != nil {
+				log.Error(err, "Failed to export image", "image", imageUri, "path", path)
+				exportErrs[index] = err
+			}
+		}(numToExport, imageURI, imagePath)
+		// Need to increment after the go routine is called.
+		numToExport += 1
+	}
+
+	wg.Wait()
+
+	finalErr := &helpers.ListOfErrors{}
+
+	for i := 0; i < numToExport; i++ {
+		err := exportErrs[i]
+		if err != nil {
+			finalErr.AddCause(err)
+		}
+	}
+	if len(finalErr.Causes) > 0 {
+		finalErr.Final = errors.Errorf("Failed to export %d images", len(finalErr.Causes))
+		return tarResults, finalErr
+	}
+	return tarResults, nil
+}
+
+// replaceRemotes looks for all the images using a git repository and if it correspods to the current directory
+// then it replaces the remotes with the location of the gitRoot
+func (c *Controller) replaceRemotes(ctx context.Context, image *v1alpha1.Image) error {
+	log := util.LogFromContext(ctx)
+	for i, s := range image.Spec.Source {
+		if !strings.HasSuffix(s.URI, ".git") {
+			continue
+		}
+
+		sourceRepo, err := ghrepo.FromFullName(s.URI)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to parse source URI; %v", s.URI)
+		}
+
+		for _, ref := range c.localRepos {
+			remotes, err := ref.Repo.Remotes()
+			if err != nil {
+				return errors.Wrapf(err, "Error getting remotes")
+			}
+			gitRoot := ref.W.Filesystem.Root()
+			replaceErr := func() error {
+				for _, r := range remotes {
+					for _, u := range r.Config().URLs {
+						remote, err := ghrepo.FromFullName(u)
+						if err != nil {
+							return errors.Wrapf(err, "Could not parse URL for remote repository name:%v url:%v", r.Config().Name, u)
+						}
+						if ghrepo.IsSame(sourceRepo, remote) {
+							log.Info("Replacing git image source with local directory", "sourceUri", s.URI, "remote", r.Config().Name, "url", u, "gitRoot", gitRoot)
+							image.Spec.Source[i].URI = "file://" + gitRoot
+							return nil
+						}
+					}
+				}
+				return nil
+			}()
+
+			if replaceErr != nil {
+				return replaceErr
+			}
+		}
+
+	}
+	return nil
+}
+
 // ReconcileFile reconciles the images defined in a set of files.
 // It is a helper function primarily used by the CLI
 func ReconcileFile(path string) error {
@@ -250,7 +425,7 @@ func ReconcileFile(path string) error {
 
 	gitRepo, err := git.PlainOpenWithOptions(gitRoot, &git.PlainOpenOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Error opening git repo")
+		return errors.Wrapf(err, "Error opening git Repo")
 	}
 
 	w, err := gitRepo.Worktree()
@@ -280,12 +455,13 @@ func ReconcileFile(path string) error {
 	d := yaml.NewDecoder(f)
 
 	c, err := NewController()
-
+	c.localRepos = append(c.localRepos, GitRepoRef{Repo: gitRepo, W: w})
 	if err != nil {
 		return errors.Wrapf(err, "Error creating controller")
 	}
 
 	failures := &helpers.ListOfErrors{}
+
 	for {
 		image := &v1alpha1.Image{}
 		if err := d.Decode(image); err != nil {
@@ -304,7 +480,7 @@ func ReconcileFile(path string) error {
 		}
 
 		ctx := context.Background()
-		if err := c.Reconcile(ctx, image, basePath); err != nil {
+		if err := c.Reconcile(ctx, image); err != nil {
 			log.Error(err, "Failed to reconcile image", "image", image)
 			// Keep going
 			failures.AddCause(err)

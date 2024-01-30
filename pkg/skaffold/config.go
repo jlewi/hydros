@@ -892,7 +892,7 @@ type BuildpackArtifact struct {
 	Env []string `yaml:"env,omitempty"`
 
 	// Buildpacks is a list of strings, where each string is a specific buildpack to use with the builder.
-	// If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code.
+	// If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the URI from your source code.
 	// Order matters.
 	Buildpacks []string `yaml:"buildpacks,omitempty"`
 

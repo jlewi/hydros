@@ -21,7 +21,7 @@ func (f *Factory) Get(uri string) (FileHelper, error) {
 	switch u.Scheme {
 	case "":
 		return &LocalFileHelper{}, nil
-	case "gs":
+	case GCSScheme:
 		ctx := context.Background()
 		client, err := storage.NewClient(ctx)
 		if err != nil {
@@ -31,7 +31,7 @@ func (f *Factory) Get(uri string) (FileHelper, error) {
 			Ctx:    ctx,
 			Client: client,
 		}, nil
-	case "file":
+	case FileScheme:
 		return &LocalFileHelper{}, nil
 	case SecretManagerScheme:
 		return &GCPSecretManager{}, nil
