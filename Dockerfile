@@ -19,7 +19,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o hydros c
 
 # TODO(jeremy): This won't be able to run Syncer until we update syncer to use GoGit and get rid of shelling
 # out to other tools.
-FROM ${RUNTIME_IMAGE}
+# FROM ${RUNTIME_IMAGE}
+FROM alpine:3.14
+
+RUN apk update && \
+    apk add --no-cache git openssh-client
 
 COPY --from=builder /workspace/hydros /
 
