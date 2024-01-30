@@ -26,5 +26,6 @@ RUN apk update && \
     apk add --no-cache git openssh-client
 
 COPY --from=builder /workspace/hydros /
+COPY kustomize /usr/local/bin/kustomize
 
 ENTRYPOINT ["/hydros"]
