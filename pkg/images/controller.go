@@ -238,6 +238,8 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 
 	op, err := c.cbClient.CreateBuild(context.Background(), req)
 	if err != nil {
+		err := errors.Wrapf(err, "Failed to create Google Cloud Build")
+		log.Error(err, "Failed to create Google Cloud Build", "project", project, "build", build)
 		return err
 	}
 
