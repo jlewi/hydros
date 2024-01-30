@@ -3,6 +3,7 @@ package files
 import (
 	"io"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -11,6 +12,10 @@ type LocalFileHelper struct{}
 
 // NewReader creates a new Reader for local file.
 func (h *LocalFileHelper) NewReader(uri string) (io.Reader, error) {
+	schemePrefix := FileScheme + "://"
+	if strings.HasPrefix(uri, schemePrefix) {
+		uri = uri[len(schemePrefix):]
+	}
 	reader, err := os.Open(uri)
 
 	if err != nil {

@@ -41,6 +41,14 @@ func Test_ParseImage(t *testing.T) {
 				Sha:      "sha256:3fd974b119b0874074db59dd83cb721b82122140fe5df98fda9dd8b2acf84b1c",
 			},
 		},
+		{
+			In: "docker://us-west1-docker.pkg.dev/dev-sailplane/images/hercules:latest",
+			Expected: &DockerImageRef{
+				Registry: "us-west1-docker.pkg.dev",
+				Repo:     "dev-sailplane/images/hercules",
+				Tag:      "latest",
+			},
+		},
 	}
 
 	for _, c := range cases {

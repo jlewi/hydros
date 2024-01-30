@@ -67,9 +67,9 @@ func Build(tarSources []*v1alpha1.ImageSource, tarFilePath string) error {
 		}
 
 		if isTar {
-			log.Info("Adding tarball", "tarball", s.URI, "pattern", s.SourceMappings)
+			log.Info("Adding tarball", "tarball", s.URI, "pattern", s.Mappings)
 			if err := copyTarBall(tw, s); err != nil {
-				log.Error(err, "Error copying tarball", "tarball", s.URI, "source", s.SourceMappings)
+				log.Error(err, "Error copying tarball", "tarball", s.URI, "source", s.Mappings)
 				return err
 			}
 			continue
@@ -97,7 +97,7 @@ func copyLocalPath(tw *tar.Writer, s *v1alpha1.ImageSource) error {
 	}
 
 	basePath := u.Path
-	for _, a := range s.SourceMappings {
+	for _, a := range s.Mappings {
 		log.Info("Adding asset", "asset", a)
 		// TODO(jeremy): Do we need to handle the "file://" prefix?
 		sBase := basePath
@@ -162,7 +162,7 @@ func copyTarBall(tw *tar.Writer, s *v1alpha1.ImageSource) error {
 
 		// Check if any of the patterns match
 		var source *v1alpha1.SourceMapping
-		for _, s := range s.SourceMappings {
+		for _, s := range s.Mappings {
 			isMatch, err := doublestar.Match(s.Src, header.Name)
 			if err != nil {
 				return errors.Wrapf(err, "Error matching glob %v against %v", s.Src, header.Name)

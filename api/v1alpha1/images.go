@@ -1,6 +1,10 @@
 package v1alpha1
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"strings"
+)
 
 var (
 	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "URI")
@@ -40,7 +44,7 @@ type ImageSpec struct {
 	// So it includes the registry and repository but not the tag or digest
 	Image string `yaml:"image,omitempty"`
 	// Source are the source for the image
-	Source  []*ImageSource   `yaml:"imageSource,omitempty"`
+	Source  []*ImageSource   `yaml:"source,omitempty"`
 	Builder *ArtifactBuilder `yaml:"builder,omitempty"`
 }
 
@@ -54,11 +58,8 @@ type ImageSource struct {
 	// If its "//" then its a relative path. I'm not sure it makes sense to support relative paths because what
 	// would they be relative to?
 	// TODO(jeremy): If the tag isn't specified we should look for the same tag at which the new image is being built
-	URI string `yaml:"uri,omitempty"`
-	// Type specifies the type of image source
-	// TODO(jeremy): Can we just get rid of this and rely on scheme in the URI? e.g. file:/// or docker://
-	Type           ImageSourceType  `yaml:"type,omitempty"`
-	SourceMappings []*SourceMapping `yaml:"source,omitempty"`
+	URI      string           `yaml:"uri,omitempty"`
+	Mappings []*SourceMapping `yaml:"mappings,omitempty"`
 }
 
 // SourceMapping specifies how source files are mapped into the destination artifact
@@ -117,4 +118,36 @@ type ImageStatus struct {
 	URI string `yaml:"uri,omitempty"`
 	// SHA is the SHA of the image
 	SHA string `yaml:"sha,omitempty"`
+}
+
+// IsValid returns true if the config is valid.
+// For invalid config the string will be a message of validation errors
+func (c *Image) IsValid() (string, bool) {
+	errors := make([]string, 0, 10)
+
+	if c.Spec.Image == "" {
+		errors = append(errors, "Image must be specified")
+	}
+
+	for i, source := range c.Spec.Source {
+		if source.URI == "" {
+			errors = append(errors, fmt.Sprintf("Source[%d].URI must be specified", i))
+		}
+		if len(source.Mappings) == 0 {
+			errors = append(errors, fmt.Sprintf("Source[%d].Mappings must be specified", i))
+		}
+	}
+
+	if c.Spec.Builder.GCB.Bucket == "" {
+		errors = append(errors, "Spec.Builder.GCB.Bucket must be specified")
+	}
+
+	if c.Spec.Builder.GCB.Project == "" {
+		errors = append(errors, "Spec.Builder.GCB.Project must be specified")
+	}
+
+	if len(errors) > 0 {
+		return "Image is invalid. " + strings.Join(errors, ". "), false
+	}
+	return "", true
 }

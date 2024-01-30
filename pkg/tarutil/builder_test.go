@@ -46,7 +46,7 @@ func Test_Build(t *testing.T) {
 			source: []*v1alpha1.ImageSource{
 				{
 					URI: "file://" + filepath.Join(cwd, "test_data", "dirA"),
-					SourceMappings: []*v1alpha1.SourceMapping{
+					Mappings: []*v1alpha1.SourceMapping{
 						{
 							Src: "**/*.txt",
 						},

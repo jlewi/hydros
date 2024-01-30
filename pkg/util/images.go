@@ -38,11 +38,21 @@ func (d *DockerImageRef) GetAwsRegistryID() string {
 	return p[0]
 }
 
+func IsDockerURI(uri string) bool {
+	// TODO(jeremy): Should we support the scheme being optional? and rely on well known hostnames for docker registries?
+	// e.g. pkg.dev
+	return strings.HasPrefix(uri, DockerScheme)
+}
+
 // ParseImageURL parses the URL refering to a docker image
 //
 // TODO(jeremy): We should support shas as well
 // TODO(jeremy): Should we support optionally having a scheme of DockerScheme?
 func ParseImageURL(url string) (*DockerImageRef, error) {
+	schemePrefix := DockerScheme + "://"
+	if strings.HasPrefix(url, schemePrefix) {
+		url = strings.TrimPrefix(url, schemePrefix)
+	}
 	r := &DockerImageRef{}
 
 	bySha := strings.Split(url, "@")

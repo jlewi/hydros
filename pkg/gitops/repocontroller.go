@@ -270,8 +270,7 @@ func (c *RepoController) applyImage(ctx context.Context, r *resource) error {
 
 	image.Status.SourceCommit += headRef.Hash().String()
 
-	basePath := filepath.Dir(r.path)
-	return c.imageController.Reconcile(ctx, image, basePath)
+	return c.imageController.Reconcile(ctx, image)
 }
 
 func (c *RepoController) applyManifest(ctx context.Context, r *resource) error {
