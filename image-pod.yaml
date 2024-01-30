@@ -1,0 +1,23 @@
+# Test the image
+# Use /bin/ash to start a terminal because its alpine.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hydros-image
+spec:
+  containers:
+    - image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros:latest
+      name: hydros
+      command:
+        - tail
+        - -f
+        - /dev/null
+      resources:
+        # Keep the footprint small to try to minimize cost.
+        limits:
+          cpu: "1"
+          memory: 3Gi
+        requests:
+          cpu: "1"
+          memory: 3Gi
+          ephemeral-storage:  10Gi
