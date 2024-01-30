@@ -3,7 +3,6 @@ package images
 import (
 	"context"
 	"fmt"
-	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"io"
 	"os"
 	"path"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jlewi/hydros/pkg/github/ghrepo"
 
 	cb "cloud.google.com/go/cloudbuild/apiv1"
 	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"

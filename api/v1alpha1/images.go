@@ -2,8 +2,9 @@ package v1alpha1
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var (
