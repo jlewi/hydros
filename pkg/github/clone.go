@@ -110,7 +110,7 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 		return err
 	}
 
-	log.Info("Clone configured", "url", url, "appAuth", appAuth, "dir", fullDir)
+	log.Info("Clone configured", "url", url, "appAuth", appAuth, "dir", fullDir, "branch", branch)
 
 	// Clone the repository if it hasn't already been cloned.
 	cloneErr := func() error {

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "URI")
+	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "Image")
 )
 
 // ImageList is a list of images
@@ -109,6 +109,10 @@ type GCBConfig struct {
 	// See: https://cloud.google.com/build/docs/api/reference/rest/v1/projects.builds#machinetype
 	// For values. UNSPECIFIED uses the default value which has 1 CPU
 	MachineType string `yaml:"machineType,omitempty"`
+
+	// Dockerfile is the path to the Dockerfile to use for building the image
+	// This should be the path inside the context
+	Dockerfile string `yaml:"dockerfile,omitempty"`
 }
 
 type ImageStatus struct {

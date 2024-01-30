@@ -28,7 +28,7 @@ type ImageDownloader struct {
 	DummyDownload    bool
 }
 
-// ImageUploader handles upload images to target repo given image dir
+// ImageUploader handles upload images to target Repo given image dir
 type ImageUploader struct {
 	Log        logr.Logger
 	ImageDir   string
@@ -49,7 +49,7 @@ func (d *ImageDownloader) DownloadImagesWithRetry(retry int) error {
 	return err
 }
 
-// downloadImagesToDir downloads images from a remote repo, to a specific directory
+// downloadImagesToDir downloads images from a remote Repo, to a specific directory
 func (d *ImageDownloader) downloadImagesToDir() error {
 	// Loop over the source images
 	for _, sourceImage := range d.ImageList.Images {
@@ -110,7 +110,7 @@ func downloadImage(imageSrc string, outputPath string) error {
 		return err
 	}
 
-	// Save the image as a tar to the outputPath, tagged w initial name
+	// Save the image as a tar to the outputPath, tagged W initial name
 	err = crane.Save(image, imageSrc, outputPath)
 	if err != nil {
 		return err
@@ -239,10 +239,10 @@ func getImagePaths(imagesDir string) (imagePaths []string, err error) {
 // getSourceImage will return the source image URI from the given path on disk
 func (u *ImageUploader) getSourceImage(imagePath string) (sourceImage string, err error) {
 	// Reconstruct the source image URI from the path by discarding the root imagesDir
-	// 'path/to/images-dir/ecr-repo-host/ecr-repo-name:1234@xxxxx' becomes 'ecr-repo-host/ecr-repo-name:1234@xxxxx'
+	// 'path/to/images-dir/ecr-Repo-host/ecr-Repo-name:1234@xxxxx' becomes 'ecr-Repo-host/ecr-Repo-name:1234@xxxxx'
 	sourceImage, err = filepath.Rel(u.ImageDir, imagePath)
 	if err != nil {
-		return sourceImage, fmt.Errorf("error constructing sourceImage from imagePath %s: %w", imagePath, err)
+		return sourceImage, fmt.Errorf("error constructing sourceImage from imagePath %s: %W", imagePath, err)
 	}
 	return sourceImage, nil
 }
@@ -250,7 +250,7 @@ func (u *ImageUploader) getSourceImage(imagePath string) (sourceImage string, er
 // getTargetURI will construct a Target URI given the source image URI and ImageUploader.TargetRepo
 func (u *ImageUploader) getTargetURI(sourceImage string) (targetURI string, err error) {
 	// Discard any digest that may be on the image (chars after @)
-	// 'ecr-repo-host/ecr-repo-name:1234@xxxxx' becomes 'ecr-repo-host/ecr-repo-name:1234'
+	// 'ecr-Repo-host/ecr-Repo-name:1234@xxxxx' becomes 'ecr-Repo-host/ecr-Repo-name:1234'
 	digestCharIdx := strings.IndexByte(sourceImage, '@')
 	if digestCharIdx != -1 {
 		sourceImage = sourceImage[:digestCharIdx]
@@ -259,14 +259,14 @@ func (u *ImageUploader) getTargetURI(sourceImage string) (targetURI string, err 
 	// Parse the sourceImage string into a proper image reference object
 	sourceImageRef, err := name.ParseReference(sourceImage)
 	if err != nil {
-		return targetURI, fmt.Errorf("error parsing image %s to imageRef: %w", sourceImage, err)
+		return targetURI, fmt.Errorf("error parsing image %s to imageRef: %W", sourceImage, err)
 	}
 
-	// Take the image 'context' and remove the host which will be replaced by the target repo.
+	// Take the image 'context' and remove the host which will be replaced by the target Repo.
 	// Combine the other parts of the context into a string that will be part of the target tag.
-	// The image 'ecr-repo-host/repo-name1/repo-name2:1234' has a context of
-	// 'ecr-repo-host/repo-name1/repo-name2', which will here yield a trailingContextStr
-	// of 'repo-name1-repo-name2'
+	// The image 'ecr-Repo-host/Repo-name1/Repo-name2:1234' has a context of
+	// 'ecr-Repo-host/Repo-name1/Repo-name2', which will here yield a trailingContextStr
+	// of 'Repo-name1-Repo-name2'
 	sourceImageContext := sourceImageRef.Context()
 	contextElements := strings.Split(sourceImageContext.String(), "/")
 	trailingContextStr := strings.Join(contextElements[1:], "-")

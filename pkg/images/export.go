@@ -19,17 +19,17 @@ func ExportImage(src string, tarFilePath string) error {
 	var img v1.Image
 	desc, err := crane.Get(src, options...)
 	if err != nil {
-		return fmt.Errorf("pulling %s: %w", src, err)
+		return fmt.Errorf("pulling %s: %W", src, err)
 	}
 	if desc.MediaType.IsSchema1() {
 		img, err = desc.Schema1()
 		if err != nil {
-			return fmt.Errorf("pulling schema 1 image %s: %w", src, err)
+			return fmt.Errorf("pulling schema 1 image %s: %W", src, err)
 		}
 	} else {
 		img, err = desc.Image()
 		if err != nil {
-			return fmt.Errorf("pulling URI %s: %w", src, err)
+			return fmt.Errorf("pulling URI %s: %W", src, err)
 		}
 	}
 

@@ -33,12 +33,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO(jeremy): Is this neccessary? Can we retrieve the repo from the work tree?
+// GitRepoRef is a reference to a git repository.
+// TODO(jeremy): Is this neccessary? Can we retrieve the Repo from the work tree?
 // I don't think we want to always reconstruct the workTree from gitRepos because that could be expensive
 // in particular updating the ignore patterns is expensive.
-type gitRepoRef struct {
-	repo *git.Repository
-	w    *git.Worktree
+type GitRepoRef struct {
+	Repo *git.Repository
+	W    *git.Worktree
 }
 
 // Controller for images. A controller is capable of building images and resolving images to shas.
@@ -49,7 +50,7 @@ type Controller struct {
 	gcsClient *storage.Client
 
 	// pointers to one or more repositories that have already been cloned.
-	localRepos []gitRepoRef
+	localRepos []GitRepoRef
 }
 
 func NewController() (*Controller, error) {
@@ -81,7 +82,7 @@ func NewController() (*Controller, error) {
 		opsClient:  c,
 		cbClient:   client,
 		gcsClient:  gcsClient,
-		localRepos: make([]gitRepoRef, 0),
+		localRepos: make([]GitRepoRef, 0),
 	}, nil
 }
 
@@ -185,6 +186,13 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 
 	gcp.AddImages(build, images)
 	gcp.AddBuildTags(build, image.Status.SourceCommit, version)
+
+	dockerFile := "Dockerfile"
+	if image.Spec.Builder.GCB.Dockerfile != "" {
+		dockerFile = image.Spec.Builder.GCB.Dockerfile
+	}
+	gcp.AddKanikoArgs(build, []string{"--dockerfile=" + dockerFile})
+
 	build.Source = &cbpb.Source{
 		Source: &cbpb.Source_StorageSource{
 			StorageSource: &cbpb.StorageSource{
@@ -246,6 +254,21 @@ func (c *Controller) Reconcile(ctx context.Context, image *v1alpha1.Image) error
 		return errors.Errorf("Build failed with status %v", finalBuild.Status)
 	}
 
+	return nil
+}
+
+// SetLocalRepos sets the local repositories to use when resolving images
+func (c *Controller) SetLocalRepos(repos []GitRepoRef) error {
+	c.localRepos = repos
+	for i, r := range repos {
+		if r.W == nil {
+			w, err := r.Repo.Worktree()
+			if err != nil {
+				return errors.Wrapf(err, "Error getting worktree for repo %v", r.Repo)
+			}
+			c.localRepos[i].W = w
+		}
+	}
 	return nil
 }
 
@@ -332,11 +355,11 @@ func (c *Controller) replaceRemotes(ctx context.Context, image *v1alpha1.Image) 
 		}
 
 		for _, ref := range c.localRepos {
-			remotes, err := ref.repo.Remotes()
+			remotes, err := ref.Repo.Remotes()
 			if err != nil {
 				return errors.Wrapf(err, "Error getting remotes")
 			}
-			gitRoot := ref.w.Filesystem.Root()
+			gitRoot := ref.W.Filesystem.Root()
 			replaceErr := func() error {
 				for _, r := range remotes {
 					for _, u := range r.Config().URLs {
@@ -388,7 +411,7 @@ func ReconcileFile(path string) error {
 
 	gitRepo, err := git.PlainOpenWithOptions(gitRoot, &git.PlainOpenOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Error opening git repo")
+		return errors.Wrapf(err, "Error opening git Repo")
 	}
 
 	w, err := gitRepo.Worktree()
@@ -418,7 +441,7 @@ func ReconcileFile(path string) error {
 	d := yaml.NewDecoder(f)
 
 	c, err := NewController()
-	c.localRepos = append(c.localRepos, gitRepoRef{repo: gitRepo, w: w})
+	c.localRepos = append(c.localRepos, GitRepoRef{Repo: gitRepo, W: w})
 	if err != nil {
 		return errors.Wrapf(err, "Error creating controller")
 	}

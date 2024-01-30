@@ -117,6 +117,15 @@ func (c *RepoController) Reconcile(ctx context.Context) error {
 		return err
 	}
 
+	// Update the image controller with the current repo
+	if err := c.imageController.SetLocalRepos([]images.GitRepoRef{
+		{
+			Repo: c.gitRepo,
+		},
+	}); err != nil {
+		return err
+	}
+
 	// Apply all the resources in parallel
 	// https://github.com/jlewi/hydros/issues/60 is tracking properly ordering dependencies.
 	var wg sync.WaitGroup

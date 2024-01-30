@@ -56,7 +56,6 @@ func DefaultBuild() *cbpb.Build {
 			{
 				Name: kanikoBuilder,
 				Args: []string{
-					"--dockerfile=Dockerfile",
 					"--cache=true",
 					// Set the date as a build arg
 					// This is so that it can be passed to the builder and used to set the date in the image
