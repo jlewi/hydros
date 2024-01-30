@@ -20,15 +20,6 @@ type ImageList struct {
 	Images []string `yaml:"images,omitempty"`
 }
 
-type ImageSourceType string
-
-const (
-	// ImageSourceTypeDocker is a docker image
-	ImageSourceTypeDocker ImageSourceType = "docker"
-	// ImageSourceTypeDir is a local directory
-	ImageSourceTypeDir ImageSourceType = "dir"
-)
-
 // Image defines an image to be continuously built
 type Image struct {
 	APIVersion string   `yaml:"apiVersion" yamltags:"required"`
