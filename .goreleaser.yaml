@@ -6,7 +6,8 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
+      # TODO(https://github.com/jlewi/hydros/issues/71): Disable windows builds.
+      #- windows
       - darwin
 
     # N.B. No need to build for 386 architecture
