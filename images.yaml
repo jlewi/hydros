@@ -19,7 +19,7 @@ spec:
     # Pull in kustomize from its docker image
     - uri: docker://registry.k8s.io/kustomize/kustomize:v5.0.0
       mappings:
-        - src: /app/kustomize
+        - src: app/kustomize
           strip: app
   builder:
     gcb:
