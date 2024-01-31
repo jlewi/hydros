@@ -40,7 +40,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kustomize "sigs.k8s.io/kustomize/api/types"
 )
 
@@ -260,6 +260,8 @@ func (s *Syncer) RunOnce(force bool) error {
 
 	// Generate a unique run id for each run so that its easy to group log entries about a single run.
 	s.log = s.log.WithValues("run", uuid.New().String()[0:5])
+	ctx := context.Background()
+	ctx = logr.NewContext(ctx, s.log)
 	s.execHelper.Log = s.log
 	log := s.log
 	if _, err := os.Stat(s.workDir); os.IsNotExist(err) {
@@ -270,6 +272,13 @@ func (s *Syncer) RunOnce(force bool) error {
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create dir: %v", s.workDir)
 		}
+	}
+
+	// Set the pauseStatus if needed
+	// This is necessary to ensure that the pausedUntil gets persisted when we update the manifest in git
+	// which causes it to get paused
+	if err := setPausedUntil(s.manifest); err != nil {
+		log.Error(err, "Failed to set pause status")
 	}
 
 	// Check if there is a PR already pending from the branch and if there is don't do a sync.
@@ -316,6 +325,16 @@ func (s *Syncer) RunOnce(force bool) error {
 	}
 
 	lastStatus := s.lastStatusFromManifest(filepath.Join(s.workDir, destKey, s.manifest.Spec.DestPath, lastSyncFile))
+
+	// We need to take into account the current manifest and the lastStatus to deci
+	if isPaused(ctx, *s.manifest, *lastStatus, time.Now()) {
+		log.Info("Sync paused", "pausedUntil", lastStatus.PausedUntil)
+		return nil
+	}
+
+	if lastStatus.PausedUntil != nil {
+		log.Info("Sync pause has expired", "pausedUntil", lastStatus.PausedUntil)
+	}
 
 	// Walk the source repository and find all kustomization files.
 	kustomizeFiles, err := findKustomizationFiles(sourceRoot, sourceRepoRoot, s.manifest.Spec.ExcludeDirs, log)
@@ -844,7 +863,28 @@ func (s *Syncer) lastStatusFromManifest(syncFile string) *v1alpha1.ManifestSyncS
 		log.Error(err, "Could not decode ManifestSync")
 		return lastStatus
 	}
+
 	return &lastSync.Status
+}
+
+// setPausedUntil checks for the annotation PauseAnnotation and sets the status to paused until the specified time
+// if necessary
+func setPausedUntil(s *v1alpha1.ManifestSync) error {
+	if s.Metadata.Annotations == nil {
+		return nil
+	}
+
+	timeJson, ok := s.Metadata.Annotations[v1alpha1.PauseAnnotation]
+	if !ok {
+		return nil
+	}
+
+	t := &metav1.Time{}
+	if err := t.UnmarshalJSON([]byte(timeJson)); err != nil {
+		return errors.Wrapf(err, "Failed to unmarshal the value of annotations %v; value %v", v1alpha1.PauseAnnotation, timeJson)
+	}
+	s.Status.PausedUntil = t
+	return nil
 }
 
 func (s *Syncer) getSourceCommit() string {
@@ -1323,4 +1363,42 @@ func readKustomization(kfDefFile string) (*kustomize.Kustomization, error) {
 		return nil, err
 	}
 	return def, nil
+}
+
+// isPaused checks if the sync is paused until a certain time
+// if it is it returns the time until it is paused otherwise returns nil
+func isPaused(ctx context.Context, m v1alpha1.ManifestSync, lastStatus v1alpha1.ManifestSyncStatus, now time.Time) bool {
+	log := util.LogFromContext(ctx)
+	if lastStatus.PausedUntil == nil {
+		return false
+	}
+
+	// Since this is a takeover we ignore the pause
+	if isTakeOver(m) {
+		log.Info("Takeover in progress; ignoring pause")
+		return false
+	}
+
+	return lastStatus.PausedUntil.Time.After(now)
+}
+
+// isTakeOver returns true if this is a dev takeover
+func isTakeOver(m v1alpha1.ManifestSync) bool {
+	if m.Metadata.Annotations == nil {
+		return false
+	}
+
+	val, ok := m.Metadata.Annotations[v1alpha1.TakeoverAnnotation]
+	if !ok {
+		return false
+	}
+
+	val = strings.ToLower(strings.TrimSpace(val))
+
+	// Any value other than "false" is considered a takeover
+	// The thinking is the annotation should only be set in the event of takeover
+	if val == "false" {
+		return false
+	}
+	return true
 }

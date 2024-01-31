@@ -1,7 +1,10 @@
 package gitops
 
 import (
+	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kustomize "sigs.k8s.io/kustomize/api/types"
@@ -14,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Test_generateTargetPath(t *testing.T) {
@@ -271,5 +275,109 @@ func Test_matches(t *testing.T) {
 		if c.expected != actual {
 			t.Errorf("Got %v; want %v", actual, c.expected)
 		}
+	}
+}
+
+func Test_matchesAnnotations(t *testing.T) {
+
+	type testCase struct {
+		m        *v1alpha1.ManifestSync
+		expected metav1.Time
+	}
+
+	expectedTime := metav1.Date(2024, 1, 30, 16, 36, 10, 0, time.UTC)
+
+	jsonTime, err := expectedTime.MarshalJSON()
+	if err != nil {
+		t.Errorf("Failed to marshal time: %v", err)
+	}
+
+	cases := []testCase{
+		{
+			m: &v1alpha1.ManifestSync{
+				Metadata: v1alpha1.Metadata{
+					Annotations: map[string]string{
+						v1alpha1.PauseAnnotation: string(jsonTime),
+					},
+				},
+			},
+			expected: expectedTime,
+		},
+	}
+
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("Test case %d", i), func(t *testing.T) {
+			if err := setPausedUntil(c.m); err != nil {
+				t.Errorf("setPausedUntil failed; error %v", err)
+				return
+			}
+
+			actual := c.m.Status.PausedUntil
+			if !c.expected.Equal(actual) {
+				t.Errorf("Test case %d: Got %v; want %v", i, actual, c.expected)
+			}
+		})
+	}
+}
+
+func Test_IsPaused(t *testing.T) {
+	type testCase struct {
+		name       string
+		m          *v1alpha1.ManifestSync
+		lastStatus *v1alpha1.ManifestSyncStatus
+		now        time.Time
+		expected   bool
+	}
+
+	fakeNow := time.Date(2024, 1, 30, 16, 36, 10, 0, time.UTC)
+
+	cases := []testCase{
+		{
+			name:       "Not paused",
+			m:          &v1alpha1.ManifestSync{},
+			lastStatus: &v1alpha1.ManifestSyncStatus{},
+			now:        fakeNow,
+			expected:   false,
+		},
+		{
+			name: "Paused",
+			m:    &v1alpha1.ManifestSync{},
+			lastStatus: &v1alpha1.ManifestSyncStatus{
+				PausedUntil: &metav1.Time{Time: fakeNow.Add(1 * time.Hour)},
+			},
+			now:      fakeNow,
+			expected: true,
+		},
+		{
+			name: "Takeover-overrides-paused",
+			m: &v1alpha1.ManifestSync{
+				Metadata: v1alpha1.Metadata{
+					Annotations: map[string]string{v1alpha1.TakeoverAnnotation: "true"},
+				},
+			},
+			lastStatus: &v1alpha1.ManifestSyncStatus{
+				PausedUntil: &metav1.Time{Time: fakeNow.Add(1 * time.Hour)},
+			},
+			now:      fakeNow,
+			expected: false,
+		},
+		{
+			name: "Expired-Pause",
+			m:    &v1alpha1.ManifestSync{},
+			lastStatus: &v1alpha1.ManifestSyncStatus{
+				PausedUntil: &metav1.Time{Time: fakeNow.Add(-1 * time.Hour)},
+			},
+			now:      fakeNow,
+			expected: false,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(fmt.Sprintf(c.name), func(t *testing.T) {
+			actual := isPaused(context.Background(), *c.m, *c.lastStatus, c.now)
+			if actual != c.expected {
+				t.Errorf("Test case %v: Got %v; want %v", c.name, actual, c.expected)
+			}
+		})
 	}
 }

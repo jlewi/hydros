@@ -2,6 +2,9 @@ package v1alpha1
 
 import (
 	"testing"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"gopkg.in/yaml.v3"
 
@@ -16,9 +19,29 @@ func Test_ParseYaml(t *testing.T) {
 		expected *ManifestSync
 	}
 
+	expectedTime := metav1.Date(2024, 1, 30, 16, 36, 10, 0, time.UTC)
 	testCases := []testCase{
 		{
-			input: `apiVersion: mlp.primer.ai/v1alpha1
+			input: `apiVersion: hydros.sailplane.ai/v1alpha1
+kind: ManifestSync
+metadata:
+  name: test
+status:
+  pausedUntil: "2024-01-30T16:36:10Z"
+`,
+			expected: &ManifestSync{
+				APIVersion: "hydros.sailplane.ai/v1alpha1",
+				Kind:       "ManifestSync",
+				Metadata: Metadata{
+					Name: "test",
+				},
+				Status: ManifestSyncStatus{
+					PausedUntil: &expectedTime,
+				},
+			},
+		},
+		{
+			input: `apiVersion: hydros.sailplane.ai/v1alpha1
 kind: ManifestSync
 metadata:
   name: mlp-helm-dev
@@ -47,7 +70,7 @@ spec:
           - some/image/repo
 `,
 			expected: &ManifestSync{
-				APIVersion: "mlp.primer.ai/v1alpha1",
+				APIVersion: "hydros.sailplane.ai/v1alpha1",
 				Kind:       "ManifestSync",
 				Metadata: Metadata{
 					Name: "mlp-helm-dev",
