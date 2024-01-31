@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -17,6 +20,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	maxPause = 12 * time.Hour
+)
+
 type TakeOverArgs struct {
 	WorkDir     string
 	Secret      string
@@ -25,6 +32,7 @@ type TakeOverArgs struct {
 	File        string
 	KeyFile     string
 	RepoDir     string
+	Pause       time.Duration
 }
 
 func NewTakeOverCmd() *cobra.Command {
@@ -46,7 +54,7 @@ func NewTakeOverCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opts.File, "file", "", "", "The file containing the configuration to apply.")
 	cmd.Flags().StringVarP(&opts.KeyFile, "ssh-key-file", "", "", "(Optional) Path of PEM file containing ssh key used to push current changes. If blank will try to find key in ${HOME}/.ssh.")
 	cmd.Flags().StringVarP(&opts.RepoDir, "repo-dir", "", "", "(Optional) Directory containing the source repo that should be pushed. If blank it is inferred based on the path of the --file argument")
-
+	cmd.Flags().DurationVarP(&opts.Pause, "pause", "", 2*time.Hour, "How long to pause regular syncs. Maximum is 2 hours")
 	cmd.MarkFlagRequired("file")
 	cmd.MarkFlagRequired("private-key")
 	return cmd
@@ -54,6 +62,10 @@ func NewTakeOverCmd() *cobra.Command {
 
 func TakeOver(args *TakeOverArgs) error {
 	log := zapr.NewLogger(zap.L())
+
+	if args.Pause > maxPause {
+		return errors.Errorf("Pause duration is too long; maximum is %v", maxPause)
+	}
 
 	secret, err := files.Read(args.Secret)
 	if err != nil {
@@ -85,6 +97,20 @@ func TakeOver(args *TakeOverArgs) error {
 		return errors.Wrapf(err, "Failed to decode ManifestSync from file %v", manifestPath)
 	}
 
+	tEnd := time.Now().Add(args.Pause)
+
+	k8sTime := metav1.NewTime(tEnd)
+	v, err := k8sTime.MarshalJSON()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to marshal time %v", tEnd)
+	}
+	m.Metadata.Annotations = map[string]string{
+		// We need to mark it as a takeover otherwise we won't override pauses.
+		v1alpha1.TakeoverAnnotation: "true",
+		v1alpha1.PauseAnnotation:    string(v),
+	}
+
+	log.Info("Pausing automatic syncs", "pauseUntil", string(v))
 	syncer, err := gitops.NewSyncer(m, manager, gitops.SyncWithWorkDir(args.WorkDir), gitops.SyncWithLogger(log))
 	if err != nil {
 		return err

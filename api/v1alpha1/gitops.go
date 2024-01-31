@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type (
@@ -37,6 +38,10 @@ const (
 	IncludeRepo RepoMatchType = "include"
 	// ExcludeRepo is the enum value indicating a repo list is an exclude list.
 	ExcludeRepo RepoMatchType = "exclude"
+
+	// PauseAnnotation is the annotation used to pause a sync.
+	PauseAnnotation    = "hydros.sailplane.ai/pauseUntil"
+	TakeoverAnnotation = "hydros.sailplane.ai/takeover"
 )
 
 var (
@@ -114,6 +119,8 @@ type GitHubRepo struct {
 
 // ManifestSyncStatus is the status for ManifestSync resources.
 type ManifestSyncStatus struct {
+	// PausedUntil is a timestamp indicating when the sync should be paused until.
+	PausedUntil  *metav1.Time  `yaml:"pausedUntil,omitempty"`
 	SourceURL    string        `yaml:"sourceUrl,omitempty"`
 	SourceCommit string        `yaml:"sourceCommit,omitempty"`
 	PinnedImages []PinnedImage `yaml:"pinnedImages,omitempty"`
