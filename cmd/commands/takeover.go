@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/files"
@@ -97,20 +95,11 @@ func TakeOver(args *TakeOverArgs) error {
 		return errors.Wrapf(err, "Failed to decode ManifestSync from file %v", manifestPath)
 	}
 
-	tEnd := time.Now().Add(args.Pause)
-
-	k8sTime := metav1.NewTime(tEnd)
-	v, err := k8sTime.MarshalJSON()
-	if err != nil {
-		return errors.Wrapf(err, "Failed to marshal time %v", tEnd)
-	}
-	m.Metadata.Annotations = map[string]string{
-		// We need to mark it as a takeover otherwise we won't override pauses.
-		v1alpha1.TakeoverAnnotation: "true",
-		v1alpha1.PauseAnnotation:    string(v),
+	if err := gitops.SetTakeOverAnnotations(m, args.Pause); err != nil {
+		return errors.Wrapf(err, "Failed to set takeover annotations")
 	}
 
-	log.Info("Pausing automatic syncs", "pauseUntil", string(v))
+	log.Info("Pausing automatic syncs")
 	syncer, err := gitops.NewSyncer(m, manager, gitops.SyncWithWorkDir(args.WorkDir), gitops.SyncWithLogger(log))
 	if err != nil {
 		return err

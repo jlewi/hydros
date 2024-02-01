@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"strings"
+	"time"
 )
 
 var (
@@ -35,6 +36,23 @@ type RepoSpec struct {
 	// Selectors is one or more labelselectors used to filter resources
 	// to sync. A resource must match one of the label selectors in order to be included
 	Selectors []LabelSelector `yaml:"selectors,omitempty"`
+
+	// Pause causes the controller to pause regular ManifestSync hydration for the specified amount of type
+	// This causes the manifests to be hydrated in a takeover configuration
+	Pause string `yaml:"pause,omitempty"`
+
+	// RepoMappings is a list of one or more mappings from one repository to another repository(or branch).
+	// This is used to rewrite the sourceRepositories in ManifestSync resources in order to hydrate from a
+	// branch.
+	RepoMappings []RepoMapping `yaml:"repoMappings,omitempty"`
+}
+
+// RepoMapping is a mapping from a repository to a directory
+type RepoMapping struct {
+	// Input is the input URI of the repository to use.
+	Input string `yaml:"input"`
+	// Output is the output repostiroy to use.
+	Output string `yaml:"output"`
 }
 
 // IsValid returns true if the config is valid.
@@ -65,6 +83,13 @@ func (c *RepoConfig) IsValid() (string, bool) {
 
 	if len(c.Spec.Selectors) == 0 {
 		errors = append(errors, "At least one selector must be specified.")
+	}
+
+	if c.Spec.Pause != "" {
+		_, err := time.ParseDuration(c.Spec.Pause)
+		if err != nil {
+			errors = append(errors, "Pause is not a valid duration")
+		}
 	}
 
 	if len(errors) > 0 {
