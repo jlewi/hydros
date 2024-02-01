@@ -2,9 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
-	"io"
 
 	"github.com/spf13/cobra"
 )

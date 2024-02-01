@@ -2,14 +2,15 @@ package gitops
 
 import (
 	"context"
+	"net/url"
+	"time"
+
 	"github.com/jlewi/hydros/api/v1alpha1"
 	gh "github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/url"
-	"time"
 )
 
 // rewriteRepos rewrites the repos in the manifest to the new repos if necessary.

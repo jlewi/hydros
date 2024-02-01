@@ -2,9 +2,10 @@ package gitops
 
 import (
 	"context"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/jlewi/hydros/api/v1alpha1"
-	"testing"
 )
 
 func Test_rewriteRepos(t *testing.T) {

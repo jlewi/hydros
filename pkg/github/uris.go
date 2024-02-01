@@ -1,8 +1,9 @@
 package github
 
 import (
-	"github.com/jlewi/hydros/api/v1alpha1"
 	"net/url"
+
+	"github.com/jlewi/hydros/api/v1alpha1"
 )
 
 // GitHubRepoToURI converts a GitHubRepo to a URI in the gogetter form.
