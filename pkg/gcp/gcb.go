@@ -55,8 +55,8 @@ func DefaultBuild() *cbpb.Build {
 		Steps: []*cbpb.BuildStep{
 			{
 				Name: kanikoBuilder,
-				// N.B. We don't enable caching by default because that can cause problems.
 				Args: []string{
+					"--cache=true",
 					// Set the date as a build arg
 					// This is so that it can be passed to the builder and used to set the date in the image
 					// of the build
