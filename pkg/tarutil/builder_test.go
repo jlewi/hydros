@@ -22,7 +22,7 @@ func Test_Build(t *testing.T) {
 	util.SetupLogger("info", true)
 
 	tDir, err := os.MkdirTemp("", "")
-
+	defer os.RemoveAll(tDir)
 	if err != nil {
 		t.Fatalf("Error creating temp dir %v", err)
 	}
@@ -84,7 +84,7 @@ func Test_Build(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			oFile := filepath.Join(tDir, "test.tar.gz")
+			oFile := filepath.Join(tDir, c.name+" _test.tar.gz")
 			if err := Build(c.source, oFile); err != nil {
 				t.Fatalf("Error building tarball for image %+v", err)
 			}
