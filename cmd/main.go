@@ -122,6 +122,7 @@ func init() {
 	rootCmd.AddCommand(commands.NewTakeOverCmd())
 	rootCmd.AddCommand(commands.NewHydrosServerCmd())
 	rootCmd.AddCommand(commands.NewCloneCmd())
+	rootCmd.AddCommand(commands.NewVersionCmd())
 
 	rootCmd.PersistentFlags().BoolVar(&gOptions.devLogger, "dev-logger", false, "If true configure the logger for development; i.e. non-json output")
 	rootCmd.PersistentFlags().StringVarP(&gOptions.level, "log-level", "", "info", "Log level: error info or debug")

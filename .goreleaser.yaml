@@ -17,8 +17,8 @@ builds:
 
     # Custom ldflags templates.
     # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser`.
-    #ldflags:
-      #- "-s -w -X github.com/jlewi/roboweb/kubedr/cmd/commands.version={{.Version}} -X github.com/jlewi/roboweb/kubedr/cmd/commands.commit={{.Commit}} -X github.com/jlewi/roboweb/kubedr/cmd/commands.date={{.Date}} -X github.com/jlewi/roboweb/kubedr/cmd/commands.builtBy=goreleaser"
+    ldflags:
+      - "-s -w -X github.com/jlewi/hydros/cmd/commands.version={{.Version}} -X github.com/jlewi/hydro/cmd/commands.commit={{.Commit}} -X github.com/jlewi/hydros/cmd/commands.date={{.Date}} -X github.com/jlewi/hydros/cmd/commands.builtBy=goreleaser"
 archives:
   # https://goreleaser.com/customization/archive/?h=archives
   - id: "binary"
