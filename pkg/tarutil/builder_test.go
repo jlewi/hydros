@@ -62,6 +62,24 @@ func Test_Build(t *testing.T) {
 				"dirB/file2.txt",
 			},
 		},
+		{
+			// test that a leading slash in the src is handled correctly
+			name: "test-leading-slash",
+			source: []*v1alpha1.ImageSource{
+				{
+					URI: "file://" + filepath.Join(cwd, "test_data", "dirA"),
+					Mappings: []*v1alpha1.SourceMapping{
+						{
+							Src: "/*.txt",
+						},
+					},
+				},
+			},
+
+			expected: []string{
+				"file1.txt",
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -235,6 +253,48 @@ func Test_splitParent(t *testing.T) {
 			}
 			if glob != c.glob {
 				t.Errorf("Expected glob %v; got %v", c.glob, glob)
+			}
+		})
+	}
+}
+
+func Test_matchGlobToHeader(t *testing.T) {
+	type testCase struct {
+		name    string
+		glob    string
+		header  string
+		isMatch bool
+	}
+
+	cases := []testCase{
+		{
+			name:    "basic",
+			glob:    "pkg/**/*.go",
+			header:  "pkg/app.go",
+			isMatch: true,
+		},
+		{
+			name:    "glob-has-leading-slash",
+			glob:    "/pkg/**/*.go",
+			header:  "pkg/app.go",
+			isMatch: true,
+		},
+		{
+			name:    "not-a-match",
+			glob:    "/pkg/**/*.go",
+			header:  "app.go",
+			isMatch: false,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			actual, err := matchGlobToHeader(c.glob, c.header)
+			if err != nil {
+				t.Fatalf("Error matching glob %v", err)
+			}
+			if actual != c.isMatch {
+				t.Errorf("Expected result %v; got %v", c.isMatch, actual)
 			}
 		})
 	}

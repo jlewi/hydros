@@ -163,9 +163,9 @@ func copyTarBall(tw *tar.Writer, s *v1alpha1.ImageSource) error {
 		// Check if any of the patterns match
 		var source *v1alpha1.SourceMapping
 		for _, s := range s.Mappings {
-			isMatch, err := doublestar.Match(s.Src, header.Name)
+			isMatch, err := matchGlobToHeader(s.Src, header.Name)
 			if err != nil {
-				return errors.Wrapf(err, "Error matching glob %v against %v", s.Src, header.Name)
+				return err
 			}
 
 			if isMatch {
@@ -214,6 +214,14 @@ func copyTarBall(tw *tar.Writer, s *v1alpha1.ImageSource) error {
 			return errors.Wrapf(err, "Error reading file contents")
 		}
 	}
+}
+
+func matchGlobToHeader(glob string, headerName string) (bool, error) {
+	// We need to strip the leading / if any from the glob.
+	// https://github.com/jlewi/hydros/issues/69
+	// the paths in the tarball don't have them
+	glob = strings.TrimPrefix(glob, "/")
+	return doublestar.Match(glob, headerName)
 }
 
 // splitIntoParent splits a path into a parent and glob
