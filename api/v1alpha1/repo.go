@@ -14,6 +14,7 @@ var (
 )
 
 // RepoConfig specifies a repository that should be checked out and periodically sync'd.
+// TODO(jeremy): RepoConfig is a terrible name.
 type RepoConfig struct {
 	APIVersion string   `yaml:"apiVersion"`
 	Kind       string   `yaml:"kind"`
