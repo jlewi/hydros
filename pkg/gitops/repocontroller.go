@@ -292,6 +292,24 @@ func (c *RepoController) applyManifest(ctx context.Context, r *resource) error {
 		return errors.Wrapf(err, "Error decoding manifest")
 	}
 
+	// Rewrite the source repo if necessary
+	if err := rewriteRepos(ctx, manifest, c.config.Spec.RepoMappings); err != nil {
+		return err
+	}
+
+	pause := c.config.Spec.Pause
+	if pause != "" {
+		pauseDur, err := time.ParseDuration(pause)
+		if err != nil {
+			return errors.Wrapf(err, "Error parsing pause duration %v", pause)
+		}
+
+		if err := SetTakeOverAnnotations(manifest, pauseDur); err != nil {
+			return errors.Wrapf(err, "Failed to set takeover annotations")
+		}
+		log.Info("Pausing automatic syncs; doing a takeover")
+	}
+
 	// Create a workDir for this syncer
 	// Each ManifestSync should get its own workDir
 	// This should be stable names so that they get reused on each sync

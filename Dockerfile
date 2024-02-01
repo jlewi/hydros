@@ -2,10 +2,14 @@ ARG BUILD_IMAGE=golang:1.19
 ARG RUNTIME_IMAGE=cgr.dev/chainguard/static:latest
 FROM ${BUILD_IMAGE} as builder
 
+# Build Args need to be after the FROM stage otherwise they don't get passed through to the RUN statment
+ARG VERSION=unknown
+ARG DATE=unknown
+ARG COMMIT=unknown
+
 WORKDIR /workspace/
 
 COPY . /workspace
-
 
 ## Build
 # N.B Disabling CGO can potentially cause problems on MacOSX and darwin builds because some networking requires
@@ -15,7 +19,14 @@ COPY . /workspace
 # environment.
 #
 # TODO(jeremy): We should be setting version information here
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o hydros cmd/main.go
+# The LDFLAG can't be specified multiple times so we use an environment variable to build it up over multiple lines
+RUN LDFLAGS="-s -w -X github.com/jlewi/hydros/cmd/commands.version=${VERSION}" && \
+    LDFLAGS="${LDFLAGS} -X github.com/jlewi/hydros/cmd/commands.commit=${COMMIT}" && \
+    LDFLAGS="${LDFLAGS} -X github.com/jlewi/hydros/cmd/commands.date=${DATE}" && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
+    go build \
+    -ldflags "${LDFLAGS}" \
+    -a -o hydros cmd/main.go
 
 # TODO(jeremy): This won't be able to run Syncer until we update syncer to use GoGit and get rid of shelling
 # out to other tools.

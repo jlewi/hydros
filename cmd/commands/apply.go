@@ -42,7 +42,7 @@ func NewApplyCmd() *cobra.Command {
 				log.Info("apply takes at least one argument which should be the file or directory YAML to apply.")
 				return
 			}
-
+			logVersion()
 			paths := []string{}
 
 			for _, resourcePath := range args {
