@@ -69,13 +69,13 @@ func (h *GCPSecretManager) NewReader(uri string) (io.Reader, error) {
 
 		if ok {
 			if status.Code() == codes.NotFound {
-				log.Info("No secret exists containing cached token", "secret", secret)
-				return nil, nil
+				log.Info("Secret doesn't exist", "secret", secret)
+				return nil, errors.Errorf("secret %v doesn't exist", secret)
 			}
 
 			if status.Code() == codes.FailedPrecondition {
-				log.Info("Latest version of secret is not valid a new secret will be created.", "secret", secret, "status_message", status.Message())
-				return nil, nil
+				log.Info("here was a problem trying to access the latest version of secret", "secret", secret, "status_message", status.Message())
+				return nil, errors.Errorf("There was a problem trying to access the latest version of secret %v", secret)
 			}
 		}
 		return nil, errors.Wrapf(err, "failed to access secret %v", secret)
