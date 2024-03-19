@@ -62,7 +62,7 @@ type Syncer struct {
 
 	selector *meta.LabelSelector
 
-	// Cache the Google URI Resolver
+	// Cache the Google image Resolver
 	gcpImageResovler *gcp.ImageResolver
 }
 
@@ -371,7 +371,7 @@ func (s *Syncer) RunOnce(force bool) error {
 		// If the image is built from source then we want to change the tag of the image
 		// to be the source commit
 		if strategy == v1alpha1.SourceCommitStrategy {
-			log.V(util.Debug).Info("URI built from source", "image", source, "oldTag", source.Tag, "newTag", sourceCommit)
+			log.V(util.Debug).Info("image built from source", "image", source, "oldTag", source.Tag, "newTag", sourceCommit)
 			taggedImage.Tag = sourceCommit
 		}
 
@@ -817,7 +817,7 @@ func (s *Syncer) didImagesChange(lastSync []v1alpha1.PinnedImage, current map[ut
 		}
 
 		if lastPinned.ToURL() != newPinned.ToURL() {
-			log.V(util.Debug).Info("URI changed", "mutable", image, "lastPinned", lastPinned, "newPinned", newPinned)
+			log.V(util.Debug).Info("image changed", "mutable", image, "lastPinned", lastPinned, "newPinned", newPinned)
 			changed = append(changed, newPinned)
 		}
 	}
@@ -1139,7 +1139,7 @@ func (s *Syncer) applyKustomizeFns(hydratedPath string, sourceRoot string, files
 }
 
 // TODO(jeremy): Having buildImages as a method on Syncer no longer makes sense.
-// We have the URI resource which should be used to build images. We aren't using skaffold to build images
+// We have the image resource which should be used to build images. We aren't using skaffold to build images
 // so we might just want to delete this code.
 func (s *Syncer) buildImages(sourcePath string, sourceCommit string) error {
 	// Give each run of buildImages a unique id so its easy to group all the messages about image building
@@ -1147,7 +1147,7 @@ func (s *Syncer) buildImages(sourcePath string, sourceCommit string) error {
 	log := s.log.WithValues("skaffoldId", uuid.New().String()[0:5])
 
 	if s.manifest.Spec.ImageBuilder == nil || !s.manifest.Spec.ImageBuilder.Enabled {
-		log.Info("URI builder not enabled")
+		log.Info("image builder not enabled")
 		return nil
 	}
 

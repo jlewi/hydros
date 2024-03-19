@@ -2,6 +2,8 @@ package files
 
 import (
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 // Read reads the given URI
@@ -14,6 +16,9 @@ func Read(uri string) ([]byte, error) {
 	r, err := h.NewReader(uri)
 	if err != nil {
 		return nil, err
+	}
+	if r == nil {
+		return nil, errors.Errorf("no reader was returned for %v", uri)
 	}
 	return io.ReadAll(r)
 }
