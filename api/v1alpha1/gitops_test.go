@@ -22,7 +22,7 @@ func Test_ParseYaml(t *testing.T) {
 	expectedTime := metav1.Date(2024, 1, 30, 16, 36, 10, 0, time.UTC)
 	testCases := []testCase{
 		{
-			input: `apiVersion: hydros.sailplane.ai/v1alpha1
+			input: `apiVersion: hydros.dev/v1alpha1
 kind: ManifestSync
 metadata:
   name: test
@@ -30,7 +30,7 @@ status:
   pausedUntil: "2024-01-30T16:36:10Z"
 `,
 			expected: &ManifestSync{
-				APIVersion: "hydros.sailplane.ai/v1alpha1",
+				APIVersion: "hydros.dev/v1alpha1",
 				Kind:       "ManifestSync",
 				Metadata: Metadata{
 					Name: "test",
@@ -41,7 +41,7 @@ status:
 			},
 		},
 		{
-			input: `apiVersion: hydros.sailplane.ai/v1alpha1
+			input: `apiVersion: hydros.dev/v1alpha1
 kind: ManifestSync
 metadata:
   name: mlp-helm-dev
@@ -70,7 +70,7 @@ spec:
           - some/image/repo
 `,
 			expected: &ManifestSync{
-				APIVersion: "hydros.sailplane.ai/v1alpha1",
+				APIVersion: "hydros.dev/v1alpha1",
 				Kind:       "ManifestSync",
 				Metadata: Metadata{
 					Name: "mlp-helm-dev",

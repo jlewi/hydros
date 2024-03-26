@@ -40,8 +40,8 @@ const (
 	ExcludeRepo RepoMatchType = "exclude"
 
 	// PauseAnnotation is the annotation used to pause a sync.
-	PauseAnnotation    = "hydros.sailplane.ai/pauseUntil"
-	TakeoverAnnotation = "hydros.sailplane.ai/takeover"
+	PauseAnnotation    = "hydros.dev/pauseUntil"
+	TakeoverAnnotation = "hydros.dev/takeover"
 )
 
 var (

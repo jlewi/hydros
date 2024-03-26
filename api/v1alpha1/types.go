@@ -2,8 +2,7 @@ package v1alpha1
 
 const (
 	// Group for MLP tasks.
-	// TODO(jeremy): we should change this
-	Group = "hydros.sailplane.ai"
+	Group = "hydros.dev"
 	// Version for tasks.
 	Version = "v1alpha1"
 )

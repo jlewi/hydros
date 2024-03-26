@@ -1,10 +1,10 @@
 kind: Image
-apiVersion: hydros.sailplane.ai/v1alpha1
+apiVersion: hydros.dev/v1alpha1
 metadata:
   name: hydros
   namespace: hydros
 spec:
-  image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros
+  image: us-west1-docker.pkg.dev/foyle/images/hydros/hydros
   source:
     - uri: https://github.com/jlewi/hydros.git
       mappings:
