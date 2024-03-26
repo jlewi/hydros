@@ -28,16 +28,16 @@ A RepoConfig resource is used to define a collection of resources that need to b
 Here's an example:
 
 ```yaml
-apiVersion: hydros.sailplane.ai/v1alpha1
+apiVersion: hydros.dev/v1alpha1
 kind: RepoConfig
 metadata:
   name: repo
   namespace: sailplaneai
 spec:
-  repo: https://github.com/sailplaneai/code.git
+  repo: https://github.com/yourrepo/code.git
   gitHubAppConfig:
     appID: 384797
-    privateKey: gcpsecretmanager:///projects/dev-sailplane/secrets/hydros-ghapp-key/versions/latest
+    privateKey: gcpsecretmanager:///projects/YOURPROJECT/secrets/hydros-ghapp-key/versions/latest
   globs:
     - "**/*.yaml"
   selectors:

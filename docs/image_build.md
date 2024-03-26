@@ -12,12 +12,12 @@ Here's an example
 
 ```yaml
 kind: Image
-apiVersion: hydros.sailplane.ai/v1alpha1
+apiVersion: hydros.dev/v1alpha1
 metadata:
   name: hydros
   namespace: hydros
 spec:
-  image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros
+  image: us-west1-docker.pkg.dev/foyle-public/images/hydros/hydros
   source:
     - uri: https://github.com/jlewi/hydros.git
       mappings:
@@ -31,8 +31,8 @@ spec:
         - src: "test/**/*.go"
   builder:
     gcb:
-      project: dev-sailplane
-      bucket : builds-sailplane
+      project: YOUR-PROJECT
+      bucket : builds-your-project
 ```
 
 Currently only the GCB builder is supported.
@@ -44,7 +44,7 @@ that will be copied into the context. The source field is an array of objects wi
 
 * uri: The URI of the source resource. This can be a git repository or docker image.
   * For git repositories the URI should be the URL of the repository e.g. `https://github.com/jlewi/hydros.git`
-  * For docker images the URI should be the image name with the scheme `docker://` e.g. `docker://gcr.io/dev-sailplane/hydros:latest
+  * For docker images the URI should be the image name with the scheme `docker://` e.g. `docker://gcr.io/foyle-public/hydros:latest
 * mappings: An array of mappings specifying files to be copied into the context.
 
 * src: This is a glob expression matching files to be copied into the context. The glob expression is relative to the
