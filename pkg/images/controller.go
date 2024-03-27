@@ -420,7 +420,7 @@ func ReconcileFile(path string) error {
 		return errors.Wrapf(err, "Failed to open file: %v", manifestPath)
 	}
 
-	gitRoot, err := gitutil.LocateRoot(path)
+	gitRoot, err := gitutil.LocateRoot(manifestPath)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to locate git root for %v", path)
 	}

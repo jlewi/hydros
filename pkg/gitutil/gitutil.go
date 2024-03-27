@@ -20,7 +20,14 @@ import (
 
 // LocateRoot locates the root of the git repository at path.
 // Returns empty string if not a git repo.
-func LocateRoot(path string) (string, error) {
+func LocateRoot(origPath string) (string, error) {
+	// If we don't get the absolute path then for a relative path such as "image.yaml" we end up returning "." as the
+	// dir and the loop never terminates
+	path, err := filepath.Abs(origPath)
+	if err != nil {
+		return "", errors.Wrapf(err, "Could not locate git root for %v because the absolute path could not be obtained", origPath)
+
+	}
 	fInfo, err := os.Stat(path)
 	if err != nil {
 		return "", errors.Wrapf(err, "Error stating path %v", path)
