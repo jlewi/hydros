@@ -69,9 +69,11 @@ func Test_ResolveImageToSHA(t *testing.T) {
 
 	r := &ImageResolver{}
 
+	// TODO(jeremy): As of 2024/04/04 this is probably not pointing to a valid image. So we probably need to
+	// upate the test to use a valid image.
 	ref := util.DockerImageRef{
 		Registry: "us-west1-docker.pkg.dev",
-		Repo:     "dev-sailplane/images/vscode/webserver",
+		Repo:     "foyle-public/images/some/image",
 		Tag:      "78eb2ca7-1690-4711-a97e-188d27866635",
 	}
 	expectedSha := "sha256:f2709b8a04f7ee03c7a1b5ce014e480b568661d7383dfbd9578ffca531c9184a"

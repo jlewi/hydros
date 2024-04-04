@@ -28,7 +28,7 @@ func Test_ImageDownloader(t *testing.T) {
 		Log: log,
 		ImageList: v1alpha1.ImageList{
 			Images: []string{
-				"us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot",
+				"us-west1-docker.pkg.dev/foyle-public/images/foyle-vscode-ext",
 			},
 		},
 		ImageDir: tDir,

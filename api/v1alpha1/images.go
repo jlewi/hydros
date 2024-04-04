@@ -32,7 +32,7 @@ type Image struct {
 
 type ImageSpec struct {
 	// Image is the full path of the image to be built
-	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
+	// e.g.us-west1-docker.pkg.dev/some-project/images/hydros
 	// So it includes the registry and repository but not the tag or digest
 	Image string `yaml:"image,omitempty"`
 	// Source are the source for the image
@@ -44,7 +44,7 @@ type ImageSource struct {
 	// URI is the path of the resource to use as a source
 	// This can be a local path or a docker image. If its a local path relative paths will be interpreted
 	// relative to the location of the YAML file containing the resource.
-	// e.g.us-west1-docker.pkg.dev/dev-sailplane/images/hydros/agent
+	// e.g.us-west1-docker.pkg.dev/some-project/images/hydros/agent
 	//
 	// Use file:// to specify a local path e.g. file:///path/to/dir. Note the third "/" indicates its an absolute path
 	// If its "//" then its a relative path. I'm not sure it makes sense to support relative paths because what

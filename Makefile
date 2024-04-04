@@ -33,7 +33,7 @@ test:
 # This is much faster
 # TODO(jeremy): We should add support to image.yaml to use ko
 build-ko-image:
-	KO_DOCKER_REPO=us-west1-docker.pkg.dev/dev-sailplane/images/hydros \
+	KO_DOCKER_REPO=us-west1-docker.pkg.dev/foyle-public/images/hydros \
 		ko build --bare github.com/jlewi/hydros/cmd  
 
 # This builds the image using hydros which uses GCB

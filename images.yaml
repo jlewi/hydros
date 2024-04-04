@@ -4,7 +4,7 @@ metadata:
   name: hydros
   namespace: hydros
 spec:
-  image: us-west1-docker.pkg.dev/foyle/images/hydros/hydros
+  image: us-west1-docker.pkg.dev/foyle-public/images/hydros/hydros
   source:
     - uri: https://github.com/jlewi/hydros.git
       mappings:
@@ -23,5 +23,5 @@ spec:
           strip: app
   builder:
     gcb:
-      project: dev-sailplane
-      bucket : builds-sailplane
+      project: foyle-public
+      bucket : builds-foyle-public

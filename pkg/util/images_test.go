@@ -42,10 +42,10 @@ func Test_ParseImage(t *testing.T) {
 			},
 		},
 		{
-			In: "docker://us-west1-docker.pkg.dev/dev-sailplane/images/hercules:latest",
+			In: "docker://us-west1-docker.pkg.dev/acme-public/images/someimage:latest",
 			Expected: &DockerImageRef{
 				Registry: "us-west1-docker.pkg.dev",
-				Repo:     "dev-sailplane/images/hercules",
+				Repo:     "acme-public/images/someimage",
 				Tag:      "latest",
 			},
 		},

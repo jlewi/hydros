@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	sailplaneHydrosKey   = "gcpsecretmanager:///projects/887891891186/secrets/hydros-ghapp-key/versions/latest"
-	sailplaneHydrosAppID = int64(384797)
+	hydrosKey   = "gcpsecretmanager:///projects/513170322007/secrets/hydros-ghapp-key/versions/latest"
+	hydrosAppID = int64(384797)
 )
 
 // N.B. there is also a test in cmd/commands/clone_test.go
@@ -20,14 +20,14 @@ func Test_ReposCloner(t *testing.T) {
 		t.Skipf("Test is skipped in GitHub actions")
 	}
 
-	privateKey, err := files.Read(sailplaneHydrosKey)
+	privateKey, err := files.Read(hydrosKey)
 	if err != nil {
 		t.Fatalf("Failed to read key; error %v", err)
 	}
 
 	log := util.SetupLogger("info", true)
 
-	manager, err := NewTransportManager(sailplaneHydrosAppID, privateKey, log)
+	manager, err := NewTransportManager(hydrosAppID, privateKey, log)
 
 	if err != nil {
 		t.Fatalf("Failed to create transport manager; error %v", err)
@@ -41,7 +41,7 @@ func Test_ReposCloner(t *testing.T) {
 	cloner := &ReposCloner{
 		Manager: manager,
 		BaseDir: tDir,
-		URIs:    []string{"https://github.com/sailplaneai/roboweb.git"},
+		URIs:    []string{"https://github.com/jlewi/hydros-hydrated.git"},
 	}
 
 	if err := cloner.Run(context.TODO()); err != nil {

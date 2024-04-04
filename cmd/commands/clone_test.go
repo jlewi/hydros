@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	sailplaneHydrosKey   = "gcpsecretmanager:///projects/887891891186/secrets/hydros-ghapp-key/versions/latest"
-	sailplaneHydrosAppID = int64(384797)
+	hydrosKey   = "gcpsecretmanager:///projects/513170322007/secrets/hydros-ghapp-key/versions/latest"
+	hydrosAppID = int64(384797)
 )
 
 func Test_CloneConfig(t *testing.T) {
@@ -66,18 +66,20 @@ func Test_CloneCmd(t *testing.T) {
 		outDir string
 	}
 
+	// TODO(jeremy): As of 2024/04/04 these repo references were updated and may not be valid. The test most likely
+	// needs to be updated.
 	cases := []testCase{
 		{
-			repo:   "https://github.com/sailplaneai/roboweb.git",
-			outDir: "sailplaneai/roboweb",
+			repo:   "https://github.com/jlewi/hydros-hydrated.git",
+			outDir: "jlewi/roboweb",
 		},
 		{
-			repo:   "https://github.com/sailplaneai/roboweb.git?ref=jlewi/cicd",
-			outDir: "sailplaneai/roboweb",
+			repo:   "https://github.com/jlewi/hydros-hydrated.git?ref=jlewi/cicd",
+			outDir: "jlewi/roboweb",
 		},
 		{
-			repo:   "https://github.com/sailplaneai/kubepilot?sha=9fa5bc0",
-			outDir: "sailplaneai/kubepilot",
+			repo:   "https://github.com/jlewi/hydros-hydrated?sha=9fa5bc0",
+			outDir: "jlewi/kubepilot",
 		},
 	}
 
@@ -94,8 +96,8 @@ func Test_CloneCmd(t *testing.T) {
 			cmd.SetArgs([]string{
 				"--repo=" + c.repo,
 				"--work-dir=" + tDir,
-				"--app-id=" + fmt.Sprintf("%d", sailplaneHydrosAppID),
-				"--private-key=" + sailplaneHydrosKey,
+				"--app-id=" + fmt.Sprintf("%d", hydrosAppID),
+				"--private-key=" + hydrosKey,
 			})
 			if err := cmd.Execute(); err != nil {
 				t.Fatalf("Failed to run clone; error %v", err)

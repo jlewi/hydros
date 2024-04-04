@@ -134,9 +134,9 @@ func LoadUser(r *git.Repository) (*User, error) {
 // null op if its clean.
 // w is the worktree
 // You should call AddGitIgnore on the worktree before calling this function if you want to ensure files are ignored.
-// TODO(jeremy): I'm not sure this is the right API. I did it this way because with kubedr it was really slow
+// TODO(jeremy): I'm not sure this is the right API. I did it this way because on some repositories it was really slow
 // to get the worktree and add .gitignore so I didn't want to do that more than once.
-// https://github.com/sailplaneai/code/issues/872 is tracking the slowness.
+// https://github.com/jlewi/hydros/issues/84 is tracking the slowness.
 func CommitAll(r *git.Repository, w *git.Worktree, message string) error {
 	log := zapr.NewLogger(zap.L())
 	log.Info("Getting git status")
