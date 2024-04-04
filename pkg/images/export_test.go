@@ -21,9 +21,9 @@ func Test_DownloadImage(t *testing.T) {
 	defer os.RemoveAll(tDir)
 
 	util.SetupLogger("info", true)
-	image := "us-west1-docker.pkg.dev/dev-sailplane/images/kubepilot:latest"
+	image := "us-west1-docker.pkg.dev/foyle-public/images/foyle-public/foyle-vscode-ext:latest"
 
-	tarball := filepath.Join(tDir, "kubepilot.tar")
+	tarball := filepath.Join(tDir, "foyle.tar")
 	if err := ExportImage(image, tarball); err != nil {
 		t.Fatalf("Error downloading image %v", err)
 	}

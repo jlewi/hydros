@@ -32,7 +32,7 @@ apiVersion: hydros.dev/v1alpha1
 kind: RepoConfig
 metadata:
   name: repo
-  namespace: sailplaneai
+  namespace: hydros
 spec:
   repo: https://github.com/yourrepo/code.git
   gitHubAppConfig:

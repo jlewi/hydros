@@ -6,7 +6,7 @@ metadata:
   name: hydros-image
 spec:
   containers:
-    - image: us-west1-docker.pkg.dev/dev-sailplane/images/hydros/hydros:latest
+    - image: us-west1-docker.pkg.dev/foyle-public/images/hydros/hydros:latest
       name: hydros
       command:
         - tail
