@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/jlewi/hydros/pkg/images"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -205,6 +206,28 @@ func apply(a applyOptions, path string, syncNames map[string]string) error {
 				log.Info("Sleep", "duration", a.period)
 				time.Sleep(a.period)
 			}
+		} else if m.Kind == v1alpha1.ReplicatedImageGVK.Kind {
+			syncNames[m.Name] = path
+			replicated := &v1alpha1.ReplicatedImage{}
+			if err := n.YNode().Decode(&replicated); err != nil {
+				log.Error(err, "Failed to decode ReplicatedImage")
+				allErrors.AddCause(err)
+				continue
+			}
+
+			r, err := images.NewReplicator()
+			if err != nil {
+				return err
+			}
+
+			if err := r.Reconcile(context.Background(), replicated); err != nil {
+				return err
+			}
+
+		} else {
+			err := fmt.Errorf("Unsupported kind: %v", m.Kind)
+			log.Error(err, "Unsupported kind", "kind", m.Kind)
+			allErrors.AddCause(err)
 		}
 	}
 
