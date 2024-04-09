@@ -3,8 +3,9 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/jlewi/hydros/pkg/images"
 	"time"
+
+	"github.com/jlewi/hydros/pkg/images"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"

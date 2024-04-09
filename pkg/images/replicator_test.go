@@ -2,9 +2,10 @@ package images
 
 import (
 	"context"
-	"github.com/jlewi/hydros/api/v1alpha1"
 	"os"
 	"testing"
+
+	"github.com/jlewi/hydros/api/v1alpha1"
 )
 
 func TestReplicator(t *testing.T) {

@@ -3,7 +3,7 @@ package images
 import (
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
+
 	"github.com/go-logr/zapr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/gcrane"
@@ -39,7 +39,6 @@ func NewReplicator() (*Replicator, error) {
 func (r *Replicator) Reconcile(ctx context.Context, replicated *v1alpha1.ReplicatedImage) error {
 	log := util.LogFromContext(ctx)
 	log = log.WithValues("namespace", replicated.Metadata.Namespace, "name", replicated.Metadata.Name)
-	ctx = logr.NewContext(ctx, log)
 
 	if replicated.Spec.Source.Repository == "" {
 		return fmt.Errorf("ReplicatedImage.Spec.Source.Repository is required")
