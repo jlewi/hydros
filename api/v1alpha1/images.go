@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "Image")
+	ImageGVK           = schema.FromAPIVersionAndKind(Group+"/"+Version, "Image")
+	ReplicatedImageGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "ReplicatedImage")
 )
 
 // ImageList is a list of images
@@ -146,4 +147,29 @@ func (c *Image) IsValid() (string, bool) {
 		return "Image is invalid. " + strings.Join(errors, ". "), false
 	}
 	return "", true
+}
+
+// ReplicatedImage replicates an image to one or more locations.
+// This is useful for using Artifact registry to build images and then copying them to GHCR.
+type ReplicatedImage struct {
+	APIVersion string              `yaml:"apiVersion" yamltags:"required"`
+	Kind       string              `yaml:"kind" yamltags:"required"`
+	Metadata   Metadata            `yaml:"metadata,omitempty"`
+	Spec       ReplicatedImageSpec `yaml:"spec,omitempty"`
+}
+
+type ReplicatedImageSpec struct {
+	// Source is the source of the image to replicate
+	Source ReplicatedImageSource `yaml:"source,omitempty"`
+	// Destinations are the destination repositories to replicate the image to
+	Destinations []string `yaml:"destinations,omitempty"`
+}
+
+type ReplicatedImageSource struct {
+	// Repository is the full path of the image to replicate
+	// e.g.us-west1-docker.pkg.dev/some-project/images/hydros
+	// So it includes the registry and repository but not the tag or digest
+	Repository string `yaml:"repository,omitempty"`
+	// TODO(jeremy): Should we add a selector or policy to determine which images to replicate?
+	// Default would always to be the latest
 }

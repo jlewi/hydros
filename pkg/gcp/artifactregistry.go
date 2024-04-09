@@ -72,6 +72,8 @@ func NewImageResolver(ctx context.Context) (*ImageResolver, error) {
 	}, nil
 }
 
+// TODO(jeremy): Could we use crane to resolve images and automatically support a whole bunch of registries.
+
 type ImageResolver struct {
 	client *artifactregistry.Client
 }
