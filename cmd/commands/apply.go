@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/jlewi/hydros/pkg/config"
 	"time"
 
 	"github.com/jlewi/hydros/pkg/images"
@@ -15,7 +16,6 @@ import (
 	"github.com/jlewi/hydros/pkg/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/gitops"
-	"github.com/jlewi/hydros/pkg/hydros"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -78,13 +78,11 @@ func NewApplyCmd() *cobra.Command {
 		},
 	}
 
-	applyCmd.Flags().StringVarP(&aOptions.workDir, "work-dir", "", "", "Directory where repos should be checked out")
-	applyCmd.Flags().StringVarP(&aOptions.secret, "private-key", "", "", "Path to the file containing the secret for the GitHub App to Authenticate as.")
-	applyCmd.Flags().IntVarP(&aOptions.githubAppID, "appId", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
+	applyCmd.Flags().StringVarP(&aOptions.workDir, config.WorkDirFlagName, "", "", "Directory where repos should be checked out")
+	applyCmd.Flags().StringVarP(&aOptions.secret, config.PrivateKeyFlagName, "", "", "Path to the file containing the secret for the GitHub App to Authenticate as.")
+	applyCmd.Flags().IntVarP(&aOptions.githubAppID, config.AppIDFlagName, "", "", "GitHubAppId.")
 	applyCmd.Flags().DurationVarP(&aOptions.period, "period", "p", 0*time.Minute, "The period with which to reapply. If zero run once and exit.")
 	applyCmd.Flags().BoolVarP(&aOptions.force, "force", "", false, "Force a sync even if one isn't needed.")
-
-	_ = applyCmd.MarkFlagRequired("secret")
 
 	return applyCmd
 }
