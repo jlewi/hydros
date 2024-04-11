@@ -33,7 +33,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gateway
+      ghapp: gateway
       mlp-tenant: automl-1
 `,
 			},
@@ -51,7 +51,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gateway
+      ghapp: gateway
       mlp-tenant: automl-1
 `,
 			},

@@ -117,7 +117,7 @@ func (r *Renderer) Run(anyEvent any) error {
 	// CreateCheckRun requires a commit in order to attach a run to.
 	// N.B. There is a bit of a race condition here. We risk reporting
 	// the run as queued when it isn't actually because we crash before calling enqueue. However, its always
-	// possible that the app crashes after it was enqueued but before it succeeds. That should eventually be handled
+	// possible that the ghapp crashes after it was enqueued but before it succeeds. That should eventually be handled
 	// by appropriate level based semantics. If we don't call CreateCheckRun we won't know the
 	check, response, err := r.client.Checks.CreateCheckRun(context.Background(), r.org, r.repo, ghAPI.CreateCheckRunOptions{
 		Name:       RendererCheckName,
@@ -398,7 +398,7 @@ func (r *Renderer) syncNeeded() (bool, error) {
 	}
 
 	// N.B. This is a bit of a hack but couldn't figure out a better way. The email and name don't appear
-	// to be what is set in the git config.  I think it depends on the values set in the GitHub app.
+	// to be what is set in the git config.  I think it depends on the values set in the GitHub ghapp.
 	if strings.HasPrefix(commit.Author.Name, "hydros") {
 		log.Info("Last commit was made by hydros AI; skipping sync", "name", commit.Author.Name, "email", commit.Author.Email, "commit", commit.Hash.String())
 		return false, nil

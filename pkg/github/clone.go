@@ -18,7 +18,7 @@ import (
 // ReposCloner clones a set of repositories
 //
 // TODO(jeremy): This is currently GitHub specific we should change that
-// TODO(jeremy): How do we support public repositories? right now it always uses the app auth.
+// TODO(jeremy): How do we support public repositories? right now it always uses the ghapp auth.
 type ReposCloner struct {
 	// List of repositories to clone
 	URIs    []string

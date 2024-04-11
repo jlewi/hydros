@@ -35,7 +35,7 @@ spec:
         keytoremove: someothervalue
     spec:
       containers:
-      - name: app
+      - name: ghapp
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -70,7 +70,7 @@ spec:
         keytoremove: someothervalue
     spec:
       containers:
-      - name: app
+      - name: ghapp
 `,
 			filter: Fields{
 				Metadata: v1alpha1.Metadata{
@@ -97,7 +97,7 @@ spec:
  template:
    spec:
      containers:
-     - name: app
+     - name: ghapp
      affinity:
        nodeAffinity:
          requiredDuringSchedulingIgnoredDuringExecution:
@@ -130,7 +130,7 @@ spec:
  template:
    spec:
      containers:
-     - name: app
+     - name: ghapp
      tolerations:
      - effect: NoSchedule
        key: instancetype

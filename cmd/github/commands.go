@@ -24,8 +24,8 @@ func NewAppTokenCmd(w io.Writer, level *string, devLogger *bool) *cobra.Command 
 	var envFile string
 
 	cmd := &cobra.Command{
-		Use:   "github-app-token",
-		Short: "Get a github app authorization token.",
+		Use:   "github-ghapp-token",
+		Short: "Get a github ghapp authorization token.",
 		Run: func(cmd *cobra.Command, args []string) {
 			log := util.SetupLogger(*level, *devLogger)
 			err := func() error {

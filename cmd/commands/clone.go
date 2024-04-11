@@ -65,7 +65,7 @@ func NewCloneCmd() *cobra.Command {
 	cmd.Flags().StringArrayVarP(&repo, "repo", "", []string{}, "The URLs of the repos to clone.")
 	cmd.Flags().StringVarP(&workDir, "work-dir", "", "", "Directory where repos should be checked out")
 	cmd.Flags().StringVarP(&privateKeyFile, "private-key", "", "", "Path to the file containing the secret for the GitHub App to Authenticate as. Can be stored in gcpSecretManager.")
-	cmd.Flags().Int64VarP(&appID, "app-id", "", 0, "GitHubAppId.")
+	cmd.Flags().Int64VarP(&appID, "ghapp-id", "", 0, "GitHubAppId.")
 
 	return cmd
 }
