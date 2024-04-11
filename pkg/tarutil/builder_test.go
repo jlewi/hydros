@@ -164,30 +164,30 @@ func Test_matchGlob(t *testing.T) {
 	cases := []testCase{
 		{
 			files: []string{
-				"pkg/ghapp/ghapp.go",
-				"pkg/ghapp/text.tmpl",
+				"pkg/app/app.go",
+				"pkg/app/text.tmpl",
 			},
 			glob: "**/*",
 			expected: []string{
 				"pkg",
-				"pkg/ghapp",
-				"pkg/ghapp/ghapp.go",
-				"pkg/ghapp/text.tmpl",
+				"pkg/app",
+				"pkg/app/app.go",
+				"pkg/app/text.tmpl",
 			},
 		},
 		// Test ".." in a pattern
 		{
 			files: []string{
-				"pkg/ghapp/ghapp.go",
-				"pkg/ghapp/text.tmpl",
+				"pkg/app/app.go",
+				"pkg/app/text.tmpl",
 				"pkg/b/file2.go",
 			},
 			glob: "pkg/b/../**/*",
 			expected: []string{
-				"pkg/ghapp",
+				"pkg/app",
 				"pkg/b",
-				"pkg/ghapp/ghapp.go",
-				"pkg/ghapp/text.tmpl",
+				"pkg/app/app.go",
+				"pkg/app/text.tmpl",
 				"pkg/b/file2.go",
 			},
 		},
@@ -270,19 +270,19 @@ func Test_matchGlobToHeader(t *testing.T) {
 		{
 			name:    "basic",
 			glob:    "pkg/**/*.go",
-			header:  "pkg/ghapp.go",
+			header:  "pkg/app.go",
 			isMatch: true,
 		},
 		{
 			name:    "glob-has-leading-slash",
 			glob:    "/pkg/**/*.go",
-			header:  "pkg/ghapp.go",
+			header:  "pkg/app.go",
 			isMatch: true,
 		},
 		{
 			name:    "not-a-match",
 			glob:    "/pkg/**/*.go",
-			header:  "ghapp.go",
+			header:  "app.go",
 			isMatch: false,
 		},
 	}
