@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/jlewi/hydros/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
-	"os"
-	"strings"
 )
 
 // NewConfigCmd adds commands to deal with configuration

@@ -3,10 +3,11 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/jlewi/hydros/pkg/app"
-	"github.com/jlewi/hydros/pkg/config"
 	"os"
 	"time"
+
+	"github.com/jlewi/hydros/pkg/app"
+	"github.com/jlewi/hydros/pkg/config"
 
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"

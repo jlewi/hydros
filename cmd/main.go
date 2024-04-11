@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jlewi/hydros/pkg/config"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/jlewi/hydros/pkg/config"
 
 	"github.com/jlewi/hydros/cmd/commands"
 

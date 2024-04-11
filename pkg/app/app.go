@@ -3,6 +3,10 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-logr/zapr"
@@ -17,9 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"os"
-	"strings"
-	"time"
 )
 
 // App is a struct to hold values needed across all commands.
