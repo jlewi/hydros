@@ -21,8 +21,8 @@ import (
 const (
 	ConfigFlagName     = "config"
 	LevelFlagName      = "level"
-	appName            = "hydros"
-	ConfigDir          = "." + appName
+	AppName            = "hydros"
+	ConfigDir          = "." + AppName
 	WorkDirFlagName    = "work-dir"
 	AppIDFlagName      = "appId"
 	PrivateKeyFlagName = "private-key"
@@ -37,7 +37,7 @@ type Config struct {
 	Kind       string `json:"kind" yaml:"kind" yamltags:"required"`
 
 	Logging *Logging      `json:"logging,omitempty" yaml:"logging,omitempty"`
-	GitHub  *GitHubConfig `json:"GitHubConfig,omitempty" yaml:"GitHubConfig,omitempty"`
+	GitHub  *GitHubConfig `json:"gitHub,omitempty" yaml:"gitHub,omitempty"`
 	// WorkDir is the working directory for hydros where repositories should be checked out
 	WorkDir string `json:"workDir,omitempty" yaml:"workDir,omitempty"`
 }
@@ -48,7 +48,7 @@ type Logging struct {
 
 type GitHubConfig struct {
 	// AppID is the ID of the GitHub App
-	AppID string `json:"appID,omitempty" yaml:"appID,omitempty"`
+	AppID int64 `json:"appID,omitempty" yaml:"appID,omitempty"`
 	// PrivateKey is the private key for the GitHub App
 	PrivateKey string `json:"privateKey,omitempty" yaml:"privateKey,omitempty"`
 }
@@ -89,11 +89,11 @@ func (c *Config) IsValid() []string {
 // The function accepts a cmd parameter which allows binding to command flags.
 func InitViper(cmd *cobra.Command) error {
 	// Ref https://github.com/spf13/viper#establishing-defaults
-	viper.SetEnvPrefix(appName)
+	viper.SetEnvPrefix(AppName)
 	// name of config file (without extension)
 	viper.SetConfigName("config")
 	// make home directory the first search path
-	viper.AddConfigPath("$HOME/." + appName)
+	viper.AddConfigPath("$HOME/." + AppName)
 
 	// Without the replacer overriding with environment variables doesn't work
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -111,7 +111,8 @@ func InitViper(cmd *cobra.Command) error {
 	if cmd != nil {
 		for key, flag := range keyToflagName {
 			if err := viper.BindPFlag(key, cmd.Flags().Lookup(flag)); err != nil {
-				return err
+				// Do nothing. Not all the flags listed above are present for all commands.
+				// e.g. work-dir is only for some commands
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jlewi/hydros/pkg/config"
 	"io"
 	"os"
 	"strings"
@@ -123,9 +124,13 @@ func init() {
 	rootCmd.AddCommand(commands.NewHydrosServerCmd())
 	rootCmd.AddCommand(commands.NewCloneCmd())
 	rootCmd.AddCommand(commands.NewVersionCmd("hydros", os.Stdout))
+	rootCmd.AddCommand(commands.NewConfigCmd())
 
 	rootCmd.PersistentFlags().BoolVar(&gOptions.devLogger, "dev-logger", false, "If true configure the logger for development; i.e. non-json output")
-	rootCmd.PersistentFlags().StringVarP(&gOptions.level, "log-level", "", "info", "Log level: error info or debug")
+	rootCmd.PersistentFlags().StringVarP(&gOptions.level, config.LevelFlagName, "", "info", "Log level: error info or debug")
+
+	var cfgFile string
+	rootCmd.PersistentFlags().StringVar(&cfgFile, config.ConfigFlagName, "", fmt.Sprintf("config file (default is $HOME/.%s/config.yaml)", config.AppName))
 
 	tagCmd.Flags().StringVarP(&tOptions.skaffold, "skaffold", "", "", "image.json as output by skaffold")
 	tagCmd.Flags().StringVarP(&tOptions.image, "image", "", "", "Url of the image to tag. Can be specified rather than skaffold.")
