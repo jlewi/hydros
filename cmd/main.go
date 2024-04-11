@@ -79,7 +79,7 @@ var (
 					log.Error(err, "Failed to add tags to image", "image", tOptions.image, "tags", tags)
 				}
 			} else {
-				// TOOD(jeremy): We should use github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags
+				// TOOD(jeremy): We should use github.com/GoogleContainerTools/skaffold/cmd/skaffold/ghapp/flags
 				type Build struct {
 					ImageName string `yaml:"imageName,omitempty"`
 					Tag       string `yaml:"tag,omitempty"`

@@ -126,11 +126,11 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 		s.selector = selector
 	}
 
-	// Ensure we can get transports for each repo; this basically verifies the app is authorized
+	// Ensure we can get transports for each repo; this basically verifies the ghapp is authorized
 	// for each repo.
 	for _, repo := range getRepos(*s.manifest) {
 		if _, err := s.transports.Get(repo.Org, repo.Repo); err != nil {
-			return nil, errors.Wrapf(err, "Failed to get transport for repo %v/%v; Is the GitHub app installed in that repo?", repo.Org, repo.Repo)
+			return nil, errors.Wrapf(err, "Failed to get transport for repo %v/%v; Is the GitHub ghapp installed in that repo?", repo.Org, repo.Repo)
 		}
 	}
 
@@ -138,7 +138,7 @@ func NewSyncer(m *v1alpha1.ManifestSync, manager *github.TransportManager, opts 
 	dRepo := s.manifest.Spec.DestRepo
 	tr, err := s.transports.Get(dRepo.Org, dRepo.Repo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get transport for repo %v/%v; Is the GitHub app installed in that repo?", dRepo.Org, dRepo.Repo)
+		return nil, errors.Wrapf(err, "Failed to get transport for repo %v/%v; Is the GitHub ghapp installed in that repo?", dRepo.Org, dRepo.Repo)
 	}
 
 	args := &github.RepoHelperArgs{

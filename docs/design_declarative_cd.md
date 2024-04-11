@@ -62,7 +62,7 @@ this can be achieved by continuing to support `hydros apply` and `hydros takeove
 
 ### GitHub App
 
-Makeing hydros a GitHub App is something we'd previously explored. Some of the code is in [../pkg/app](../pkg/app).
+Makeing hydros a GitHub App is something we'd previously explored. Some of the code is in [../pkg/app](../pkg/ghapp).
 
 There were a bunch of different problems we were potentially trying to solve by making it a GitHub App
 

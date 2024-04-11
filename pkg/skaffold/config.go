@@ -775,7 +775,7 @@ type SyncRule struct {
 	Src string `yaml:"src,omitempty" yamltags:"required"`
 
 	// Dest is the destination path in the container where the files should be synced to.
-	// For example: `"app/"`
+	// For example: `"ghapp/"`
 	Dest string `yaml:"dest,omitempty" yamltags:"required"`
 
 	// Strip specifies the path prefix to remove from the source path when
@@ -1203,7 +1203,7 @@ type KoArtifact struct {
 	// Dir is the directory where the `go` tool will be run.
 	// The value is a directory path relative to the `context` directory.
 	// If empty, the `go` tool will run in the `context` directory.
-	// Example: `./my-app-sources`.
+	// Example: `./my-ghapp-sources`.
 	Dir string `yaml:"dir,omitempty"`
 
 	// Env are environment variables, in the `key=value` form, passed to the build.

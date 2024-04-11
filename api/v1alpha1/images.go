@@ -70,7 +70,7 @@ type SourceMapping struct {
 	// e.g. "css/**/*.css"
 	Src string `yaml:"src,omitempty"`
 	// Dest is the path to copy the files to in the artifact.
-	// e.g. "app"
+	// e.g. "ghapp"
 	Dest string `yaml:"dest,omitempty"`
 	// Strip is the path prefix to strip from all paths
 	Strip string `yaml:"strip,omitempty"`

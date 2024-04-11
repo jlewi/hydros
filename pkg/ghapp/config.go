@@ -1,4 +1,4 @@
-package app
+package ghapp
 
 import (
 	"github.com/jlewi/hydros/pkg/files"

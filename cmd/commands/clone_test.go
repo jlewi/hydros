@@ -96,7 +96,7 @@ func Test_CloneCmd(t *testing.T) {
 			cmd.SetArgs([]string{
 				"--repo=" + c.repo,
 				"--work-dir=" + tDir,
-				"--app-id=" + fmt.Sprintf("%d", hydrosAppID),
+				"--ghapp-id=" + fmt.Sprintf("%d", hydrosAppID),
 				"--private-key=" + hydrosKey,
 			})
 			if err := cmd.Execute(); err != nil {

@@ -9,7 +9,7 @@ spec:
       name: platform
       namespace: gateway
   hostnames:
-    - "platform.roboweb.app"
+    - "platform.roboweb.ghapp"
   rules:
     - matches:
       # As extra security precaution only expose very specific routes
