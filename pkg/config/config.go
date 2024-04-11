@@ -104,16 +104,17 @@ func InitViper(cmd *cobra.Command) error {
 	keyToflagName := map[string]string{
 		ConfigFlagName:             ConfigFlagName,
 		"logging." + LevelFlagName: LevelFlagName,
-		"workDir":                  WorkDirFlagName,
-		"github.appID":             AppIDFlagName,
-		"github.privateKey":        PrivateKeyFlagName,
 	}
 
 	if cmd != nil {
+		if strings.HasPrefix(cmd.Use, "apply") {
+			keyToflagName["workDir"] = WorkDirFlagName
+			keyToflagName["github.appID"] = AppIDFlagName
+			keyToflagName["github.privateKey"] = PrivateKeyFlagName
+		}
 		for key, flag := range keyToflagName {
 			if err := viper.BindPFlag(key, cmd.Flags().Lookup(flag)); err != nil {
-				// Do nothing. Not all the flags listed above are present for all commands.
-				// e.g. work-dir is only for some commands
+				return err
 			}
 		}
 	}
