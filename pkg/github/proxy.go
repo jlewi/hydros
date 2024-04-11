@@ -15,7 +15,7 @@ import (
 	ddMux "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
-// Proxy is a proxy server for GitHub. It proxies http requests using a GitHub app's credentials. This
+// Proxy is a proxy server for GitHub. It proxies http requests using a GitHub ghapp's credentials. This
 // makes it easy to fetch documents from private repositories.
 //
 // N.B jeremy@ tried using the gin framework but couldn't figure out how to properly handle path prefixes.

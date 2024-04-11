@@ -34,7 +34,7 @@ spec:
         keytoremove: someothervalue
     spec:
       containers:
-      - name: app
+      - name: ghapp
 `,
 			expectedOutput: `
 apiVersion: v1
@@ -51,7 +51,7 @@ spec:
         newlabel: newvalue
     spec:
       containers:
-      - name: app
+      - name: ghapp
 `,
 			filter: CommonLabelsFn{
 				Metadata: v1alpha1.Metadata{
@@ -114,7 +114,7 @@ spec:
   template:
     spec:
       containers:
-      - name: app
+      - name: ghapp
 `,
 			expectedOutput: `
 apiVersion: v1
@@ -127,7 +127,7 @@ spec:
   template:
     spec:
       containers:
-      - name: app
+      - name: ghapp
 `,
 			filter: CommonLabelsFn{
 				Metadata: v1alpha1.Metadata{

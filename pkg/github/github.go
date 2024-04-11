@@ -66,9 +66,9 @@ func newOrgAndRepo(org string, repo string) orgAndRepo {
 }
 
 // TransportManager manages transport managers for a GitHub App.
-// The manager is instantiated with the app ID and private key for a GitHub App.
+// The manager is instantiated with the ghapp ID and private key for a GitHub App.
 // The Get function can then be used to obtain a transport with credentials to talk to a particular repository
-// that the app has access to
+// that the ghapp has access to
 //
 // TODO(jeremy): Can/should we wrap this in the OAuth flow.
 // TODO(jeremy): Should we reuse some of palantir built?
@@ -123,7 +123,7 @@ func (m *TransportManager) Get(org string, repo string) (*ghinstallation.Transpo
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
 
-	// Wrap the shared transport for use with the app ID 1 authenticating with installation ID 99.
+	// Wrap the shared transport for use with the ghapp ID 1 authenticating with installation ID 99.
 	ghTr, err := ghinstallation.New(tr, m.appID, gitHubInstallID, m.privateKey)
 	if err != nil {
 		log.Error(err, "Failed to Get GitHub App Transport", "AppId", m.appID, "Org", org, "Repo", repo)

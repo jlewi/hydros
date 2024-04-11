@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/zapr"
 	"github.com/gregjones/httpcache"
-	"github.com/jlewi/hydros/pkg/app"
+	"github.com/jlewi/hydros/pkg/ghapp"
 	hGithub "github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/hydros"
 	"github.com/palantir/go-githubapp/githubapp"
@@ -47,7 +47,7 @@ func NewHydrosServerCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&baseHREF, "base-href", "", "/hydros/", "The base prefix for all URLs should end with a slash or empty string to use no prefix")
 	cmd.Flags().StringVarP(&webhookSecret, "webhook-secret", "", defaultWebhookSecret, "The URI of the HMAC secret used to sign GitHub webhooks. Can be a secret in GCP secret manager")
 	cmd.Flags().StringVarP(&privateKeySecret, "private-key", "", "", "The URI of the GitHub App private key. Can be a secret in GCP secret manager")
-	cmd.Flags().Int64VarP(&githubAppID, "app-id", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
+	cmd.Flags().Int64VarP(&githubAppID, "ghapp-id", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
 	cmd.Flags().StringVarP(&workDir, "work-dir", "", "", "(Optional) work directory where repositories should be checked out. Leave blank to use a temporary directory.")
 	cmd.Flags().IntVarP(&numWorkers, "num-workers", "", 10, "Number of workers to handle events.")
 	return cmd
@@ -55,14 +55,14 @@ func NewHydrosServerCmd() *cobra.Command {
 
 func run(baseHREF string, port int, webhookSecret string, privateKeySecret string, githubAppID int64, workDir string, numWorkers int) error {
 	log := zapr.NewLogger(zap.L())
-	config, err := app.BuildConfig(githubAppID, webhookSecret, privateKeySecret)
+	config, err := ghapp.BuildConfig(githubAppID, webhookSecret, privateKeySecret)
 	if err != nil {
 		return errors.Wrapf(err, "Error building config")
 	}
 
 	cc, err := githubapp.NewDefaultCachingClientCreator(
 		*config,
-		githubapp.WithClientUserAgent(app.UserAgent),
+		githubapp.WithClientUserAgent(ghapp.UserAgent),
 		githubapp.WithClientTimeout(3*time.Second),
 		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
 	)
@@ -80,12 +80,12 @@ func run(baseHREF string, port int, webhookSecret string, privateKeySecret strin
 		return err
 	}
 
-	handler, err := app.NewHandler(cc, transports, workDir, 10)
+	handler, err := ghapp.NewHandler(cc, transports, workDir, 10)
 	if err != nil {
 		return err
 	}
 
-	server, err := app.NewServer(baseHREF, port, *config, handler)
+	server, err := ghapp.NewServer(baseHREF, port, *config, handler)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create server")
 	}

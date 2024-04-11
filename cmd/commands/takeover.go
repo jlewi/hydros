@@ -47,7 +47,7 @@ func NewTakeOverCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&opts.WorkDir, "work-dir", "", "", "Directory where repos should be checked out")
 	cmd.Flags().StringVarP(&opts.Secret, "private-key", "", "", "Path to the file containing the secret for the GitHub App to Authenticate as.")
-	cmd.Flags().Int64VarP(&opts.GithubAppID, "app-id", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
+	cmd.Flags().Int64VarP(&opts.GithubAppID, "ghapp-id", "", hydros.HydrosGitHubAppID, "GitHubAppId.")
 	cmd.Flags().BoolVarP(&opts.Force, "force", "", false, "Force a sync even if one isn't needed.")
 	cmd.Flags().StringVarP(&opts.File, "file", "", "", "The file containing the configuration to apply.")
 	cmd.Flags().StringVarP(&opts.KeyFile, "ssh-key-file", "", "", "(Optional) Path of PEM file containing ssh key used to push current changes. If blank will try to find key in ${HOME}/.ssh.")

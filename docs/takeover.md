@@ -14,7 +14,7 @@ Hydros supports taking over dev using the CLI. This works as follows
    ```bash
     hydros takeover \
       --file=<path/to/your/manifestsync.yaml> \
-      --app-id=<GitHubAppID for Hydros> \
+      --ghapp-id=<GitHubAppID for Hydros> \
       --work-dir=<Local directory for Hydros to clone repositories> \
       --private-key=<Path to the GitHubApp Private Key; use gcpSecretManager:/// to use a GCP Secrete Manager S>
    ```
