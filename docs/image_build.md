@@ -69,7 +69,20 @@ The following build args are passed to kaniko and can be used in your Dockerfile
 
 * `DATE` - A human readable timestap
 * `COMMIT` - The full git commit
-* `Version` - A version string of the form `vv20240126T092312`
+* `VERSION` - A version string of the form `v20240126T092312`
+
+Here's an example of using them in your Dockerfile
+
+```docker
+
+FROM ${BUILD_IMAGE} as builder
+
+# Build Args need to be after the FROM stage otherwise they don't get passed through to the RUN statment
+ARG VERSION=unknown
+ARG DATE=unknown
+ARG COMMIT=unknown
+...
+```
 
 ### Tags
 

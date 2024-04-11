@@ -27,9 +27,15 @@ const (
 	// HydrosConfigPath default path to look for the hydros repository configuration file.
 	// TODO(jeremy): We should expose this as a configuration option for hydros.
 	HydrosConfigPath = "hydros.yaml"
-	// SharedRepository is the name of the repository containing the shared hydros configurationf or all repositories
+	// SharedRepository is the name of the repository containing the shared hydros configuration for all repositories
 	SharedRepository = ".github"
 )
+
+// TODO(jeremy): Per https://github.com/jlewi/hydros/issues/5#issuecomment-2050452031
+// We could probably clean a lot of this code up because we are going with a controller pattern not a GitHubApp pattern.
+// However, some of this code might still be useful because we want to enqueue reconcile events in response to GitHub
+// events. However, we don't necessarily need to rely on GitHub to read the configs. We'd rather use a K8s controller
+// for that.
 
 // HydrosHandler is a handler for certain GitHub events. It currently handles PushEvents by sending them to
 // Renderer which knows how to do in place modification using KRMs.
