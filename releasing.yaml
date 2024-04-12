@@ -5,7 +5,7 @@ metadata:
   name: hydros
   namespace: hydros
 spec:
-  repo: https://github.com/jlewi/hydros.git?ref=jlewi/ghreleaser
+  repo: https://github.com/jlewi/hydros.git
   globs:
     - "**/*.yaml"
   selectors:
