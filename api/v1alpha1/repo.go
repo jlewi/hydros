@@ -29,6 +29,8 @@ type RepoSpec struct {
 	// https://github.com/hashicorp/go-getter#protocol-specific-options
 	Repo string `yaml:"repo"`
 	// GitHubAppConfig is the configuration for the GitHub App to use to access the repo.
+	// TODO(jeremy): Can we deprecate this? Now that Hydros supports providing this as part of the cobra configuration
+	// Do we need to put this in the individual repo configs?
 	GitHubAppConfig GitHubAppConfig `yaml:"gitHubAppConfig"`
 
 	// Globs is a list of globs to search for resources to sync.

@@ -1,0 +1,8 @@
+apiVersion: hydros.dev/v1alpha1
+kind: GitHubReleaser
+metadata:
+  name: hydros
+  namespace: hydros
+spec:
+  org: jlewi
+  repo: hydros

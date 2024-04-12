@@ -150,7 +150,8 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 			continue
 		}
 		log.Info("Read resource", "meta", m)
-		if m.Kind == v1alpha1.ManifestSyncKind {
+		switch m.Kind {
+		case v1alpha1.ManifestSyncKind:
 			manifestSync := &v1alpha1.ManifestSync{}
 			err := n.Document().Decode(manifestSync)
 			if err != nil {
@@ -192,8 +193,7 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 					allErrors.AddCause(err)
 				}
 			}
-
-		} else if m.Kind == v1alpha1.RepoGVK.Kind {
+		case v1alpha1.RepoGVK.Kind:
 			syncNames[m.Name] = path
 			repo := &v1alpha1.RepoConfig{}
 			if err := n.YNode().Decode(&repo); err != nil {
@@ -214,8 +214,7 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 					return err
 				}
 			}
-
-		} else if m.Kind == v1alpha1.EcrPolicySyncKind {
+		case v1alpha1.EcrPolicySyncKind:
 			syncNames[m.Name] = path
 			region := "us-west-2"
 			log.Info("Creating a default AWS session", "region", region)
@@ -249,7 +248,7 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 				log.Info("Sleep", "duration", period)
 				time.Sleep(period)
 			}
-		} else if m.Kind == v1alpha1.ReplicatedImageGVK.Kind {
+		case v1alpha1.ReplicatedImageGVK.Kind:
 			syncNames[m.Name] = path
 			replicated := &v1alpha1.ReplicatedImage{}
 			if err := n.YNode().Decode(&replicated); err != nil {
@@ -266,8 +265,24 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 			if err := r.Reconcile(context.Background(), replicated); err != nil {
 				return err
 			}
+		case v1alpha1.GitHubReleaserGVK.Kind:
+			syncNames[m.Name] = path
+			resource := &v1alpha1.GitHubReleaser{}
+			if err := n.YNode().Decode(&resource); err != nil {
+				log.Error(err, "Failed to decode resource", "kind", m.Kind)
+				allErrors.AddCause(err)
+				continue
+			}
 
-		} else {
+			r, err := github.NewReleaser(*a.Config)
+			if err != nil {
+				return err
+			}
+
+			if err := r.Reconcile(context.Background(), resource); err != nil {
+				return err
+			}
+		default:
 			err := fmt.Errorf("Unsupported kind: %v", m.Kind)
 			log.Error(err, "Unsupported kind", "kind", m.Kind)
 			allErrors.AddCause(err)

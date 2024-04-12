@@ -7,7 +7,34 @@ How to use hydros to continuously deliver a set of resources to a kubernetes clu
 ## Configuring continuous delivery
 
 You configure continuous delivery for your application by defining resources corresponding to the artifacts
-that need to be continuously delivered.
+that need to be continuously delivered. A release is defined by two parts
+
+1. A RepoConfig resource that defines the source repository and branch to look for resource definitions
+2. A collection of resources that need to be continuously delivered see next section for more information on the resources
+
+Here is an example of a RepoConfig resource
+
+```yaml
+apiVersion: hydros.dev/v1alpha1
+kind: RepoConfig
+metadata:
+  name: repo
+  namespace: hydros
+spec:
+  repo: https://github.com/yourrepo/code.git  
+  globs:
+    - "**/*.yaml"
+  selectors:
+    - matchLabels:
+        env: dev
+```
+
+When you apply this resource using hydros, hydros does the following
+
+1. It clones the repository and branch specified in the repo field
+2. It looks for files matching the glob expressions in the globs field
+3. It reads the resources from the files and applies the selector to determine which resources to reconcile
+4. It reconciles the matching resources
 
 ### Images
 
@@ -79,3 +106,12 @@ continuously run reconciliation, you can use the `--period` flag to specify an i
 ```bash
 hydros apply --work-dir=/tmp/hydros --dev-logger=true /path/to/your/repo_config.yaml --period=5m
 ```
+
+## Developing and Testing New Workflows
+
+When developing new workflows, you can test your changes without merging them to main first as follows
+
+1. Create a new branch in your repository
+2. Update your `RepoConfig` resource to point to the new branch
+3. Push your changes to GitHub
+4. Run `hydros apply` on the `RepoConfig` resource

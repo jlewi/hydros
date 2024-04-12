@@ -13,4 +13,6 @@ type GitHubReleaserSpec struct {
 	Org string `yaml:"org,omitempty"`
 	// Repo is the repository to release
 	Repo string `yaml:"repo,omitempty"`
+
+	// TODO(jeremy): We should probably support branch
 }
