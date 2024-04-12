@@ -2,6 +2,7 @@ package gitops
 
 import (
 	"context"
+	"github.com/jlewi/hydros/pkg/config"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,6 +17,10 @@ func Test_repoController(t *testing.T) {
 		t.Skip("Skipping test because running in GHA")
 	}
 
+	if err := config.InitViper(nil); err != nil {
+		t.Fatalf("InitViper failed: %v", err)
+	}
+	hConfig := config.GetConfig()
 	util.SetupLogger("info", true)
 
 	cwd, err := os.Getwd()
@@ -33,9 +38,9 @@ func Test_repoController(t *testing.T) {
 		t.Fatalf("yaml decode failed: %v", err)
 	}
 
-	// Use the same workDir accross tests so we don't have to keep checking it out
-	workDir := "/tmp/hydros/repo_controller_test"
-	c, err := NewRepoController(repo, workDir)
+	// N.B. To use the same work directory and avoid checking out repos multiple times configure the workDir
+	// in your hydros config
+	c, err := NewRepoController(*hConfig, repo)
 	if err != nil {
 		t.Errorf("NewRepoController failed: %+v", err)
 	}

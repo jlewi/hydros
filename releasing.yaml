@@ -1,0 +1,13 @@
+# Use a RepoConfig to match resources in the hydros repository
+apiVersion: hydros.dev/v1alpha1
+kind: RepoConfig
+metadata:
+  name: hydros
+  namespace: hydros
+spec:
+  repo: https://github.com/jlewi/hydros.git
+  globs:
+    - "**/*.yaml"
+  selectors:
+    - matchLabels:
+        env: release

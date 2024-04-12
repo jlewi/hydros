@@ -6,6 +6,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-logr/zapr"
+	"github.com/jlewi/hydros/pkg/config"
+	"github.com/jlewi/hydros/pkg/files"
+	"go.uber.org/zap"
+
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/go-logr/logr"
 
@@ -80,6 +85,15 @@ type TransportManager struct {
 
 	// Map of orgAndRepo to the transport to talk to that Repo.
 	ghTransports map[orgAndRepo]*ghinstallation.Transport
+}
+
+// NewTransportManagerFromConfig creates a new transport manager from the specified configuration.
+func NewTransportManagerFromConfig(cfg config.Config) (*TransportManager, error) {
+	privateKey, err := files.Read(cfg.GitHub.PrivateKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not create GitHub transport manager; failed to read key: %s", cfg.GitHub.PrivateKey)
+	}
+	return NewTransportManager(cfg.GitHub.AppID, privateKey, zapr.NewLogger(zap.L()))
 }
 
 // NewTransportManager creates a new transport manager.

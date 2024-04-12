@@ -28,8 +28,6 @@ type RepoSpec struct {
 	// You can specify a branch using the ref parameter specifies the reference to checkout
 	// https://github.com/hashicorp/go-getter#protocol-specific-options
 	Repo string `yaml:"repo"`
-	// GitHubAppConfig is the configuration for the GitHub App to use to access the repo.
-	GitHubAppConfig GitHubAppConfig `yaml:"gitHubAppConfig"`
 
 	// Globs is a list of globs to search for resources to sync.
 	Globs []string `yaml:"globs,omitempty"`
@@ -68,14 +66,6 @@ func (c *RepoConfig) IsValid() (string, bool) {
 	if !strings.HasPrefix(c.Spec.Repo, "https://") {
 		// We use https because we are using a GitHub App
 		errors = append(errors, "Repo must be an https URL; currently only https is supported for cloning repositories")
-	}
-
-	if c.Spec.GitHubAppConfig.AppID == 0 {
-		errors = append(errors, "GitHubAppConfig.AppID must be specified and non-zero")
-	}
-
-	if c.Spec.GitHubAppConfig.PrivateKey == "" {
-		errors = append(errors, "GitHubAppConfig.PrivateKey is required")
 	}
 
 	if len(c.Spec.Globs) == 0 {

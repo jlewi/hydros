@@ -7,17 +7,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/config"
+
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
-	"github.com/jlewi/hydros/pkg/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/images"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,9 +39,7 @@ type RepoController struct {
 	selectors []labels.Selector
 }
 
-func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoController, error) {
-	log := zapr.NewLogger(zap.L())
-
+func NewRepoController(appConfig config.Config, config *v1alpha1.RepoConfig) (*RepoController, error) {
 	if config == nil {
 		return nil, errors.New("config must be non nil")
 	}
@@ -50,11 +47,8 @@ func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoContro
 	if errs, ok := config.IsValid(); !ok {
 		return nil, errors.New(errs)
 	}
-	privateKey, err := files.Read(config.Spec.GitHubAppConfig.PrivateKey)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Could not read private key %v", config.Spec.GitHubAppConfig.PrivateKey)
-	}
-	manager, err := github.NewTransportManager(config.Spec.GitHubAppConfig.AppID, privateKey, log)
+
+	manager, err := github.NewTransportManagerFromConfig(appConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +61,7 @@ func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoContro
 	cloner := &github.ReposCloner{
 		URIs:    []string{config.Spec.Repo},
 		Manager: manager,
-		BaseDir: workDir,
+		BaseDir: appConfig.GetWorkDir(),
 	}
 
 	selectors := make([]labels.Selector, 0, len(config.Spec.Selectors))
@@ -84,7 +78,7 @@ func NewRepoController(config *v1alpha1.RepoConfig, workDir string) (*RepoContro
 	}
 
 	return &RepoController{
-		workDir:         workDir,
+		workDir:         appConfig.GetWorkDir(),
 		config:          config,
 		cloner:          cloner,
 		imageController: imageController,
