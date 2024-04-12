@@ -26,7 +26,7 @@ lint: lint-go
 test-go: test
 
 test:	
-	go test -v ./...
+	GITHUB_ACTIONS=true go test -v ./...
 
 
 # Build with ko

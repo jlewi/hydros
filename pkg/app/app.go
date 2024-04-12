@@ -202,7 +202,7 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 				continue
 			}
 
-			c, err := gitops.NewRepoController(repo, a.Config.GetWorkDir())
+			c, err := gitops.NewRepoController(*a.Config, repo)
 			if err != nil {
 				return err
 			}

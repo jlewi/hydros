@@ -3,12 +3,13 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/config"
 	"github.com/jlewi/hydros/pkg/files"
 	"go.uber.org/zap"
-	"io"
-	"net/http"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/go-logr/logr"

@@ -62,9 +62,6 @@ metadata:
   namespace: hydros
 spec:
   repo: https://github.com/yourrepo/code.git
-  gitHubAppConfig:
-    appID: 384797
-    privateKey: gcpsecretmanager:///projects/YOURPROJECT/secrets/hydros-ghapp-key/versions/latest
   globs:
     - "**/*.yaml"
   selectors:

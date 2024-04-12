@@ -1,5 +1,11 @@
 package v1alpha1
 
+import "k8s.io/apimachinery/pkg/runtime/schema"
+
+var (
+	GitHubReleaserGVK = schema.FromAPIVersionAndKind(Group+"/"+Version, "GitHubReleaser")
+)
+
 // GitHubReleaser continuously cuts GitHub releases when conditions are
 // met. It takes care of setting the release notes and the version.
 type GitHubReleaser struct {

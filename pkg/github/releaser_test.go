@@ -2,11 +2,12 @@ package github
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/config"
 	"go.uber.org/zap"
-	"os"
-	"testing"
 )
 
 func Test_Releaser(t *testing.T) {

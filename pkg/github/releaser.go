@@ -3,6 +3,10 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -10,9 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/mod/semver"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 // Releaser creates github releases if needed.
@@ -59,18 +60,19 @@ func (r *Releaser) Reconcile(ctx context.Context, resource *v1alpha1.GitHubRelea
 	// Check if the latest release on the source repository is the same as the latest commit
 	// If not create a new release
 	if latestReleaseCommit == nil || latestCommit.GetSHA() != latestReleaseCommit.GetSHA() {
-		newRelease, err := createNewRelease(ctx, client, org, repo, latestSrc, latestCommit)
-		if err != nil {
+
+		if err := createNewRelease(ctx, client, org, repo, latestSrc, latestCommit); err != nil {
 			return err
 		}
-		latestSrc = newRelease
+	} else {
+		log.Info("No new commits since last release", "commit", latestCommit.GetSHA(), "tag", latestSrc.GetTagName())
 	}
 
 	return nil
 }
 
 // createNewRelease creates a new release if lastRelease is nil then it creates the first release
-func createNewRelease(ctx context.Context, client *github.Client, org string, repo string, lastRelease *github.RepositoryRelease, commit *github.RepositoryCommit) (*github.RepositoryRelease, error) {
+func createNewRelease(ctx context.Context, client *github.Client, org string, repo string, lastRelease *github.RepositoryRelease, commit *github.RepositoryCommit) error {
 	log := zapr.NewLogger(zap.L())
 
 	// Convention is to prefix with v
@@ -81,7 +83,7 @@ func createNewRelease(ctx context.Context, client *github.Client, org string, re
 		minor := pieces[len(pieces)-1]
 		minorInt, err := strconv.Atoi(minor)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Error parsing minor version %v", minor)
+			return errors.Wrapf(err, "Error parsing minor version %v", minor)
 		}
 		pieces[len(pieces)-1] = fmt.Sprintf("%d", minorInt+1)
 		newTag = strings.Join(pieces, ".")
@@ -94,10 +96,10 @@ func createNewRelease(ctx context.Context, client *github.Client, org string, re
 	})
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error generating release notes")
+		return errors.Wrapf(err, "there was a problem creating the release notes")
 	}
 
-	log.Info("Creating release", "name", newTag, "tag", newTag, "notes", notes)
+	log.Info("creating GitHub release", "name", newTag, "commit", commit.GetSHA(), "tag", newTag, "notes", notes)
 	// Create the release
 	newRelease := &github.RepositoryRelease{
 		Name:       github.String(notes.Name),
@@ -109,17 +111,17 @@ func createNewRelease(ctx context.Context, client *github.Client, org string, re
 	}
 	newRelease, _, err = client.Repositories.CreateRelease(ctx, org, repo, newRelease)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error creating release %v", newRelease.GetTagName())
+		return errors.Wrapf(err, "Failed to create release %v", newRelease.GetTagName())
 	}
 
-	return newRelease, nil
+	return nil
 }
 
 func getLatestCommit(ctx context.Context, client *github.Client, org string, repo string) (*github.RepositoryCommit, error) {
 	commit, _, err := client.Repositories.GetCommit(ctx, org, repo, "heads/main", &github.ListOptions{})
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting commit")
+		return nil, errors.Wrapf(err, "failed to get latest commit")
 	}
 
 	return commit, nil
