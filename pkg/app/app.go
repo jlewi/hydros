@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/controllers"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-logr/zapr"
@@ -26,7 +29,8 @@ import (
 // App is a struct to hold values needed across all commands.
 // Intent is to simplify initialization across commands.
 type App struct {
-	Config *config.Config
+	Config   *config.Config
+	Registry *controllers.Registry
 }
 
 func NewApp() *App {
@@ -84,6 +88,42 @@ func (a *App) SetupLogging() error {
 	return nil
 }
 
+// SetupRegistry sets up the registry with a list of registered controllers
+func (a *App) SetupRegistry() error {
+	if a.Config == nil {
+		return errors.New("Config is nil; call LoadConfig first")
+	}
+	a.Registry = &controllers.Registry{}
+
+	// Register controllers
+	image, err := images.NewController()
+	if err != nil {
+		return err
+	}
+	if err := a.Registry.Register(v1alpha1.ImageGVK, image); err != nil {
+		return err
+	}
+
+	replicator, err := images.NewReplicator()
+	if err != nil {
+		return err
+	}
+	if err := a.Registry.Register(v1alpha1.ReplicatedImageGVK, replicator); err != nil {
+		return err
+	}
+
+	releaser, err := github.NewReleaser(*a.Config)
+	if err != nil {
+		return err
+	}
+
+	if err := a.Registry.Register(v1alpha1.GitHubReleaserGVK, releaser); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ApplyPaths applies the resources in the specified paths.
 // Paths can be files or directories.
 func (a *App) ApplyPaths(ctx context.Context, paths []string, period time.Duration, force bool) error {
@@ -132,6 +172,10 @@ func (a *App) ApplyPaths(ctx context.Context, paths []string, period time.Durati
 }
 
 func (a *App) apply(ctx context.Context, path string, syncNames map[string]string, period time.Duration, force bool) error {
+	if a.Registry == nil {
+		return errors.New("Registry is nil; call SetupRegistry first")
+	}
+
 	log := zapr.NewLogger(zap.L())
 	log.Info("Reading file", "path", path)
 	rNodes, err := util.ReadYaml(path)
@@ -202,7 +246,7 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 				continue
 			}
 
-			c, err := gitops.NewRepoController(*a.Config, repo)
+			c, err := gitops.NewRepoController(*a.Config, a.Registry, repo)
 			if err != nil {
 				return err
 			}
@@ -248,44 +292,20 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 				log.Info("Sleep", "duration", period)
 				time.Sleep(period)
 			}
-		case v1alpha1.ReplicatedImageGVK.Kind:
-			syncNames[m.Name] = path
-			replicated := &v1alpha1.ReplicatedImage{}
-			if err := n.YNode().Decode(&replicated); err != nil {
-				log.Error(err, "Failed to decode ReplicatedImage")
-				allErrors.AddCause(err)
-				continue
-			}
-
-			r, err := images.NewReplicator()
-			if err != nil {
-				return err
-			}
-
-			if err := r.Reconcile(context.Background(), replicated); err != nil {
-				return err
-			}
-		case v1alpha1.GitHubReleaserGVK.Kind:
-			syncNames[m.Name] = path
-			resource := &v1alpha1.GitHubReleaser{}
-			if err := n.YNode().Decode(&resource); err != nil {
-				log.Error(err, "Failed to decode resource", "kind", m.Kind)
-				allErrors.AddCause(err)
-				continue
-			}
-
-			r, err := github.NewReleaser(*a.Config)
-			if err != nil {
-				return err
-			}
-
-			if err := r.Reconcile(context.Background(), resource); err != nil {
-				return err
-			}
 		default:
-			err := fmt.Errorf("Unsupported kind: %v", m.Kind)
-			log.Error(err, "Unsupported kind", "kind", m.Kind)
-			allErrors.AddCause(err)
+			// Going forward we should be using the registry
+			gvk := schema.FromAPIVersionAndKind(m.APIVersion, m.Kind)
+			controller, err := a.Registry.GetController(gvk)
+			if err != nil {
+				log.Error(err, "Unsupported kind", "gvk", gvk)
+				allErrors.AddCause(err)
+				continue
+			}
+
+			if err := controller.ReconcileNode(ctx, n); err != nil {
+				log.Error(err, "Failed to reconcile resource", "name", m.Name, "namespace", m.Namespace, "gvk", gvk)
+				allErrors.AddCause(err)
+			}
 		}
 	}
 

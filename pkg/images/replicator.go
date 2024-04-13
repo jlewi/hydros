@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/kustomize/kyaml/yaml"
+
 	"github.com/go-logr/zapr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/gcrane"
@@ -34,6 +36,15 @@ func NewReplicator() (*Replicator, error) {
 	}
 
 	return r, nil
+}
+
+func (r *Replicator) ReconcileNode(ctx context.Context, n *yaml.RNode) error {
+	image := &v1alpha1.ReplicatedImage{}
+	if err := n.YNode().Decode(image); err != nil {
+		return errors.Wrapf(err, "Failed to decode ReplicatedImage")
+	}
+
+	return r.Reconcile(ctx, image)
 }
 
 func (r *Replicator) Reconcile(ctx context.Context, replicated *v1alpha1.ReplicatedImage) error {

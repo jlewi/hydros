@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jlewi/hydros/pkg/controllers"
+
 	"github.com/jlewi/hydros/pkg/config"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -35,13 +37,17 @@ type RepoController struct {
 	imageController *images.Controller
 	gitRepo         *git.Repository
 	manager         *github.TransportManager
-
-	selectors []labels.Selector
+	registry        *controllers.Registry
+	selectors       []labels.Selector
 }
 
-func NewRepoController(appConfig config.Config, config *v1alpha1.RepoConfig) (*RepoController, error) {
+func NewRepoController(appConfig config.Config, registry *controllers.Registry, config *v1alpha1.RepoConfig) (*RepoController, error) {
 	if config == nil {
 		return nil, errors.New("config must be non nil")
+	}
+
+	if registry == nil {
+		return nil, errors.New("registry must be non nil")
 	}
 
 	if errs, ok := config.IsValid(); !ok {
@@ -84,6 +90,7 @@ func NewRepoController(appConfig config.Config, config *v1alpha1.RepoConfig) (*R
 		imageController: imageController,
 		manager:         manager,
 		selectors:       selectors,
+		registry:        registry,
 	}, nil
 }
 
@@ -182,10 +189,10 @@ func (c *RepoController) findResources(ctx context.Context) ([]*resource, error)
 
 	resources := make([]*resource, 0, len(yamlFiles))
 
-	allowedKinds := map[string]bool{
-		v1alpha1.ImageGVK.Kind:        true,
-		v1alpha1.ManifestSyncGVK.Kind: true,
+	excludedKinds := map[string]bool{
+		v1alpha1.RepoGVK.Kind: true,
 	}
+
 	for _, yamlFile := range yamlFiles {
 		log.V(util.Debug).Info("Reading YAML file", "yamlFile", yamlFile)
 
@@ -206,8 +213,8 @@ func (c *RepoController) findResources(ctx context.Context) ([]*resource, error)
 				continue
 			}
 
-			if !allowedKinds[s.Kind] {
-				log.V(util.Debug).Info("Skipping resource with kind", "kind", s.Kind)
+			if excludedKinds[s.Kind] {
+				log.Info("Skipping resource with kind", "kind", s.Kind)
 				continue
 			}
 
@@ -250,11 +257,13 @@ func (c *RepoController) applyResource(ctx context.Context, r *resource) error {
 	ctx = logr.NewContext(ctx, log)
 	switch r.node.GetKind() {
 	case v1alpha1.ImageGVK.Kind:
+		// TODO(jeremy): Can we use the registry here?
 		return c.applyImage(ctx, r)
 	case v1alpha1.ManifestSyncGVK.Kind:
+		// TODO(jeremy): We should move this into the registry?
 		return c.applyManifest(ctx, r)
 	default:
-		return errors.Errorf("Unknown kind %v", r.node.GetKind())
+		return c.registry.ReconcileNode(ctx, r.node)
 	}
 	return nil
 }
