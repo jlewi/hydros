@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
+
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
 	"github.com/jlewi/hydros/api/v1alpha1"
@@ -29,6 +31,15 @@ func NewReleaser(cfg config.Config) (*Releaser, error) {
 	return &Releaser{
 		Transports: t,
 	}, nil
+}
+
+func (r *Releaser) ReconcileNode(ctx context.Context, n *kyaml.RNode) error {
+	image := &v1alpha1.GitHubReleaser{}
+	if err := n.YNode().Decode(image); err != nil {
+		return errors.Wrapf(err, "Failed to decode GitHubReleaser")
+	}
+
+	return r.Reconcile(ctx, image)
 }
 
 func (r *Releaser) Reconcile(ctx context.Context, resource *v1alpha1.GitHubReleaser) error {

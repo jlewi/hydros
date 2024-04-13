@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"gopkg.in/yaml.v3"
+	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
 // GitRepoRef is a reference to a git repository.
@@ -85,6 +86,15 @@ func NewController() (*Controller, error) {
 		gcsClient:  gcsClient,
 		localRepos: make([]GitRepoRef, 0),
 	}, nil
+}
+
+func (c *Controller) ReconcileNode(ctx context.Context, n *kyaml.RNode) error {
+	image := &v1alpha1.Image{}
+	if err := n.YNode().Decode(image); err != nil {
+		return errors.Wrapf(err, "Failed to decode Image")
+	}
+
+	return c.Reconcile(ctx, image)
 }
 
 // Reconcile an image. This will build the image if necessary and resolve the image to a sha.

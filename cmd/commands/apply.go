@@ -48,6 +48,10 @@ func NewApplyCmd() *cobra.Command {
 					return err
 				}
 
+				if err := app.SetupRegistry(); err != nil {
+					return err
+				}
+
 				return app.ApplyPaths(context.Background(), args, aOptions.period, aOptions.force)
 			}()
 			if err != nil {
