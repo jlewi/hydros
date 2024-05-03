@@ -11,9 +11,6 @@ WORKDIR /workspace/
 
 COPY . /workspace
 
-RUN wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.1/kustomize_v5.4.1_linux_amd64.tar.gz && \
-    tar -xzvf kustomize.tar.gz \
-
 ## Build
 # N.B Disabling CGO can potentially cause problems on MacOSX and darwin builds because some networking requires
 # it https://github.com/golang/go/issues/16345. We use to build with CGO_ENABLED=- to disable it at Primer
