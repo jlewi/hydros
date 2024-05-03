@@ -3,6 +3,8 @@ kind: GitHubReleaser
 metadata:
   name: hydros
   namespace: hydros
+  labels:
+    env: release
 spec:
   org: jlewi
   repo: hydros
