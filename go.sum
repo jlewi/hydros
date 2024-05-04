@@ -461,6 +461,8 @@ github.com/jinzhu/now v1.1.4/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
 github.com/jlewi/monogo v0.0.0-20240123191147-401afe194d74 h1:pbOw/rOMs0AZ494bGnI6DieGKwqoJQEjHWaJZrvxsJo=
 github.com/jlewi/monogo v0.0.0-20240123191147-401afe194d74/go.mod h1:4QWrn/wb+L6rHHO3u5N250qJYWaZlHn1a8tFuWhZCP8=
+github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136 h1:LS+T7H4fR+Et6wlu8WMCiAbNRQLSmIAUA3kL+7hsixk=
+github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136/go.mod h1:s3nTD+owHZ6b+F13JdSpXLtrAH35pOqdwdcZEZ/gwBc=
 github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82 h1:RPy3iuJyBD3dU0Kg5XCk0EDiY5qHhikPlbHi350K1Aw=
 github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82/go.mod h1:JiaOBomo8HT5rxx+0Z5/18F/s4NN5qrDBA/+iRC6OGg=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=

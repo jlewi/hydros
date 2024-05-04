@@ -62,7 +62,7 @@ require (
 	github.com/google/go-github/v52 v52.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
-	github.com/jlewi/monogo v0.0.0-20240123191147-401afe194d74
+	github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136
 	github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82
 	github.com/palantir/go-githubapp v0.16.0
 	github.com/spf13/viper v1.10.0

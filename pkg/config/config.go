@@ -45,6 +45,10 @@ type Config struct {
 
 type Logging struct {
 	Level string `json:"level,omitempty" yaml:"level,omitempty"`
+	// OutputPath is a list of paths to write logs to.
+	// Use stderr to write to stderr.
+	// Use gcplogs:///projects/${PROJECT}/logs/${LOGNAME} to write to Google Cloud Logging
+	OutputPaths []string `json:"outputPaths,omitempty" yaml:"outputPaths,omitempty"`
 }
 
 type GitHubConfig struct {

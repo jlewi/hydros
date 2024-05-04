@@ -21,6 +21,7 @@ import (
 	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/images"
 	"github.com/jlewi/hydros/pkg/util"
+	"github.com/jlewi/monogo/gcp/logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -66,9 +67,13 @@ func (a *App) SetupLogging() error {
 
 	// Use the keys used by cloud logging
 	// https://cloud.google.com/logging/docs/structured-logging
-	c.EncoderConfig.LevelKey = "severity"
-	c.EncoderConfig.TimeKey = "time"
+	c.EncoderConfig.LevelKey = logging.SeverityField
+	c.EncoderConfig.TimeKey = logging.TimeField
 	c.EncoderConfig.MessageKey = "message"
+
+	if len(cfg.Logging.OutputPaths) > 0 {
+		c.OutputPaths = cfg.Logging.OutputPaths
+	}
 
 	lvl := cfg.GetLogLevel()
 	zapLvl := zap.NewAtomicLevel()
