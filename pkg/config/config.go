@@ -43,8 +43,21 @@ type Config struct {
 	WorkDir string `json:"workDir,omitempty" yaml:"workDir,omitempty"`
 }
 
+// Logging configures the logging.
 type Logging struct {
 	Level string `json:"level,omitempty" yaml:"level,omitempty"`
+	// Sinks is a list of sinks to write logs to.
+	// Use stderr to write to stderr.
+	// Use gcplogs:///projects/${PROJECT}/logs/${LOGNAME} to write to Google Cloud Logging
+	Sinks []LogSink `json:"sinks,omitempty" yaml:"sinks,omitempty"`
+}
+
+type LogSink struct {
+	// Set to true to write logs in JSON format
+	JSON bool `json:"json,omitempty" yaml:"json,omitempty"`
+	// Path is the path to write logs to. Use "stderr" to write to stderr.
+	// Use gcplogs:///projects/${PROJECT}/logs/${LOGNAME} to write to Google Cloud Logging
+	Path string `json:"path,omitempty" yaml:"path,omitempty"`
 }
 
 type GitHubConfig struct {

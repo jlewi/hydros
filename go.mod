@@ -62,7 +62,7 @@ require (
 	github.com/google/go-github/v52 v52.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
-	github.com/jlewi/monogo v0.0.0-20240123191147-401afe194d74
+	github.com/jlewi/monogo v0.0.0-20240504200912-d99cae769a01
 	github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82
 	github.com/palantir/go-githubapp v0.16.0
 	github.com/spf13/viper v1.10.0
@@ -79,6 +79,7 @@ require (
 	cloud.google.com/go/compute v1.23.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.3 // indirect
+	cloud.google.com/go/logging v1.8.1 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/DataDog/sketches-go v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
