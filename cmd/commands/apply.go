@@ -33,20 +33,20 @@ func NewApplyCmd() *cobra.Command {
 		Short: "Apply the specified resource.",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := func() error {
-				log := zapr.NewLogger(zap.L())
-				if len(args) == 0 {
-					log.Info("apply takes at least one argument which should be the file or directory YAML to apply.")
-					return errors.New("apply takes at least one argument which should be the file or directory YAML to apply.")
-				}
-				logVersion()
-
 				app := app.NewApp()
+				defer app.Shutdown()
 				if err := app.LoadConfig(cmd); err != nil {
 					return err
 				}
 				if err := app.SetupLogging(); err != nil {
 					return err
 				}
+				log := zapr.NewLogger(zap.L())
+				if len(args) == 0 {
+					log.Info("apply takes at least one argument which should be the file or directory YAML to apply.")
+					return errors.New("apply takes at least one argument which should be the file or directory YAML to apply.")
+				}
+				logVersion()
 
 				if err := app.SetupRegistry(); err != nil {
 					return err

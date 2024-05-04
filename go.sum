@@ -56,6 +56,8 @@ cloud.google.com/go/iam v0.3.0/go.mod h1:XzJPvDayI+9zsASAFO68Hk07u3z+f+JrT2xXNdp
 cloud.google.com/go/iam v1.1.3 h1:18tKG7DzydKWUnLjonWcJO6wjSCAtzh4GcRKlH/Hrzc=
 cloud.google.com/go/iam v1.1.3/go.mod h1:3khUlaBXfPKKe7huYgEpDn6FtgRyMEqbkvBxrQyY5SE=
 cloud.google.com/go/language v1.2.0/go.mod h1:CmExvQZvJq+O1c8Ljb6XDVufuSdDMT/PgGfkFiu7T/8=
+cloud.google.com/go/logging v1.8.1 h1:26skQWPeYhvIasWKm48+Eq7oUqdcdbwsCVwz5Ys0FvU=
+cloud.google.com/go/logging v1.8.1/go.mod h1:TJjR+SimHwuC8MZ9cjByQulAMgni+RkXeI3wwctHJEI=
 cloud.google.com/go/longrunning v0.5.2 h1:u+oFqfEwwU7F9dIELigxbe0XVnBAo9wqMuQLA50CZ5k=
 cloud.google.com/go/longrunning v0.5.2/go.mod h1:nqo6DQbNV2pXhGDbDMoN2bWz68MjZUzqv2YttZiveCs=
 cloud.google.com/go/pubsub v1.0.1/go.mod h1:R0Gpsv3s54REJCy4fxDixWD93lHJMoZTyQ2kNxGRt3I=
@@ -463,6 +465,8 @@ github.com/jlewi/monogo v0.0.0-20240123191147-401afe194d74 h1:pbOw/rOMs0AZ494bGn
 github.com/jlewi/monogo v0.0.0-20240123191147-401afe194d74/go.mod h1:4QWrn/wb+L6rHHO3u5N250qJYWaZlHn1a8tFuWhZCP8=
 github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136 h1:LS+T7H4fR+Et6wlu8WMCiAbNRQLSmIAUA3kL+7hsixk=
 github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136/go.mod h1:s3nTD+owHZ6b+F13JdSpXLtrAH35pOqdwdcZEZ/gwBc=
+github.com/jlewi/monogo v0.0.0-20240504200912-d99cae769a01 h1:mYQjD4rcVVrpFJPRrPSwqNyMH3Rm4VfIhCcFaGHaWNE=
+github.com/jlewi/monogo v0.0.0-20240504200912-d99cae769a01/go.mod h1:s3nTD+owHZ6b+F13JdSpXLtrAH35pOqdwdcZEZ/gwBc=
 github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82 h1:RPy3iuJyBD3dU0Kg5XCk0EDiY5qHhikPlbHi350K1Aw=
 github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82/go.mod h1:JiaOBomo8HT5rxx+0Z5/18F/s4NN5qrDBA/+iRC6OGg=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
@@ -636,6 +640,8 @@ github.com/philhofer/fwd v1.1.1 h1:GdGcTjf5RNAxwS4QLsiMzJYj5KEvPJD3Abr261yRQXQ=
 github.com/philhofer/fwd v1.1.1/go.mod h1:gk3iGcWd9+svBvR0sR+KPcfE+RNWozjowpeBVG3ZVNU=
 github.com/pjbgf/sha1cd v0.3.0 h1:4D5XXmUUBUl/xQ6IjCkEAbqXskkq/4O7LmGn0AqMDs4=
 github.com/pjbgf/sha1cd v0.3.0/go.mod h1:nZ1rrWOcGJ5uZgEEVL1VUM9iRQiZvWdbZjkKyFzPPsI=
+github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 h1:KoWmjvw+nsYOo29YJK9vDA65RGE3NrOnUtO7a+RF9HU=
+github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8/go.mod h1:HKlIX3XHQyzLZPlr7++PzdhaXEj94dEiJgZDTsxEqUI=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

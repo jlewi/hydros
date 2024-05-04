@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/jlewi/hydros/pkg/controllers"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -30,9 +32,12 @@ import (
 // App is a struct to hold values needed across all commands.
 // Intent is to simplify initialization across commands.
 type App struct {
-	Config   *config.Config
-	Registry *controllers.Registry
+	Config     *config.Config
+	Registry   *controllers.Registry
+	logClosers []logCloser
 }
+
+type logCloser func()
 
 func NewApp() *App {
 	return &App{}
@@ -61,36 +66,133 @@ func (a *App) SetupLogging() error {
 	if a.Config == nil {
 		return errors.New("Config is nil; call LoadConfig first")
 	}
-	cfg := a.Config
-	// Use a non-json configuration configuration
-	c := zap.NewDevelopmentConfig()
 
-	// Use the keys used by cloud logging
-	// https://cloud.google.com/logging/docs/structured-logging
-	c.EncoderConfig.LevelKey = logging.SeverityField
-	c.EncoderConfig.TimeKey = logging.TimeField
-	c.EncoderConfig.MessageKey = "message"
+	cores := make([]zapcore.Core, 0, 2)
 
-	if len(cfg.Logging.OutputPaths) > 0 {
-		c.OutputPaths = cfg.Logging.OutputPaths
+	consolePaths := make([]string, 0, 1)
+	jsonPaths := make([]string, 0, 1)
+
+	for _, sink := range a.Config.Logging.Sinks {
+		if sink.JSON {
+			jsonPaths = append(jsonPaths, sink.Path)
+		} else {
+			consolePaths = append(consolePaths, sink.Path)
+		}
+
+		project, logName, isLog := logging.ParseURI(sink.Path)
+		if isLog {
+			if err := logging.RegisterSink(project, logName, nil); err != nil {
+				return err
+			}
+		}
 	}
 
-	lvl := cfg.GetLogLevel()
-	zapLvl := zap.NewAtomicLevel()
-
-	if err := zapLvl.UnmarshalText([]byte(lvl)); err != nil {
-		return errors.Wrapf(err, "Could not convert level %v to ZapLevel", lvl)
+	if len(consolePaths) == 0 && len(jsonPaths) == 0 {
+		// If no sinks are specified we default to console logging.
+		consolePaths = []string{"stderr"}
 	}
 
-	c.Level = zapLvl
-	newLogger, err := c.Build()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize zap logger; error %v", err))
+	if len(consolePaths) > 0 {
+		consoleCore, err := a.createCoreForConsole(consolePaths)
+		if err != nil {
+			return errors.Wrap(err, "Could not create core logger for console")
+		}
+		cores = append(cores, consoleCore)
 	}
 
+	if len(jsonPaths) > 0 {
+		jsonCore, err := a.createJSONCoreLogger(jsonPaths)
+		if err != nil {
+			return errors.Wrap(err, "Could not create core logger for JSON paths")
+		}
+		cores = append(cores, jsonCore)
+	}
+
+	// Create a multi-core logger with different encodings
+	core := zapcore.NewTee(cores...)
+
+	// Create the logger
+	newLogger := zap.New(core)
+	// Record the caller of the log message
+	newLogger = newLogger.WithOptions(zap.AddCaller())
 	zap.ReplaceGlobals(newLogger)
 
 	return nil
+}
+
+func (a *App) createCoreForConsole(paths []string) (zapcore.Core, error) {
+	// Configure encoder for non-JSON format (console-friendly)
+	c := zap.NewDevelopmentEncoderConfig()
+
+	// Use the keys used by cloud logging
+	// https://cloud.google.com/logging/docs/structured-logging
+	c.LevelKey = logging.SeverityField
+	c.TimeKey = logging.TimeField
+	c.MessageKey = logging.MessageField
+	// We attach the function key to the logs because that is useful for identifying the function that generated the log.
+	c.FunctionKey = "function"
+
+	lvl := a.Config.GetLogLevel()
+	zapLvl := zap.NewAtomicLevel()
+
+	if err := zapLvl.UnmarshalText([]byte(lvl)); err != nil {
+		return nil, errors.Wrapf(err, "Could not convert level %v to ZapLevel", lvl)
+	}
+
+	oFile, closer, err := zap.Open(paths...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not create writer for stderr")
+	}
+	if a.logClosers == nil {
+		a.logClosers = []logCloser{}
+	}
+	a.logClosers = append(a.logClosers, closer)
+
+	encoder := zapcore.NewConsoleEncoder(c)
+	core := zapcore.NewCore(encoder, zapcore.AddSync(oFile), zapLvl)
+	return core, nil
+}
+
+// createCoreLoggerForFiles creates a core logger uses json. This is useful if you want to send the logs
+// directly to Cloud Logging.
+func (a *App) createJSONCoreLogger(paths []string) (zapcore.Core, error) {
+	// Configure encoder for JSON format
+	c := zap.NewProductionEncoderConfig()
+	// Use the keys used by cloud logging
+	// https://cloud.google.com/logging/docs/structured-logging
+	c.LevelKey = logging.SeverityField
+	c.TimeKey = logging.TimeField
+	c.MessageKey = logging.MessageField
+
+	// We attach the function key to the logs because that is useful for identifying the function that generated the log.
+	c.FunctionKey = "function"
+
+	jsonEncoder := zapcore.NewJSONEncoder(c)
+
+	oFile, closer, err := zap.Open(paths...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not open log paths %v", paths)
+	}
+	if a.logClosers == nil {
+		a.logClosers = []logCloser{}
+	}
+	a.logClosers = append(a.logClosers, closer)
+
+	zapLvl := zap.NewAtomicLevel()
+
+	if err := zapLvl.UnmarshalText([]byte(a.Config.GetLogLevel())); err != nil {
+		return nil, errors.Wrapf(err, "Could not convert level %v to ZapLevel", a.Config.GetLogLevel())
+	}
+
+	// Force log level to be at least info. Because info is the level at which we capture the logs we need for
+	// tracing.
+	if zapLvl.Level() > zapcore.InfoLevel {
+		zapLvl.SetLevel(zapcore.InfoLevel)
+	}
+
+	core := zapcore.NewCore(jsonEncoder, zapcore.AddSync(oFile), zapLvl)
+
+	return core, nil
 }
 
 // SetupRegistry sets up the registry with a list of registered controllers
@@ -319,4 +421,17 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 	}
 	allErrors.Final = fmt.Errorf("failed to apply one or more resources")
 	return allErrors
+}
+
+// Shutdown the application.
+func (a *App) Shutdown() error {
+	l := zap.L()
+	log := zapr.NewLogger(l)
+
+	log.Info("Shutting down the application")
+	// Flush the logs
+	for _, closer := range a.logClosers {
+		closer()
+	}
+	return nil
 }

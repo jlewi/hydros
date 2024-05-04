@@ -51,6 +51,10 @@ var (
 	rootCmd = &cobra.Command{
 		Short: "hydros is a tool to hydrate manifests",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// TODO(jeremy): We really be using app to load the configuration and then call setup logging.
+			// Do we want to do that in a PreRun function? Or should we make it the responsibility of each command.
+			// I think we should make it the responsibility of each command as the processing could be slightly different
+			// for each command.
 			log = util.SetupLogger(gOptions.level, gOptions.devLogger)
 		},
 	}
