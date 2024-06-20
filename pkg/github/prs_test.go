@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/zapr"
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 	"github.com/jlewi/hydros/pkg/github/ghrepo"
 	"github.com/jlewi/hydros/pkg/util"
 	"github.com/pkg/errors"

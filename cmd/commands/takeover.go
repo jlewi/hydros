@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/api/v1alpha1"
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/hydros"

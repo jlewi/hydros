@@ -1,7 +1,7 @@
 package ghapp
 
 import (
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 )

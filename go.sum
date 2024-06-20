@@ -467,6 +467,8 @@ github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136 h1:LS+T7H4fR+Et6wlu8W
 github.com/jlewi/monogo v0.0.0-20240504194504-63d901f32136/go.mod h1:s3nTD+owHZ6b+F13JdSpXLtrAH35pOqdwdcZEZ/gwBc=
 github.com/jlewi/monogo v0.0.0-20240504200912-d99cae769a01 h1:mYQjD4rcVVrpFJPRrPSwqNyMH3Rm4VfIhCcFaGHaWNE=
 github.com/jlewi/monogo v0.0.0-20240504200912-d99cae769a01/go.mod h1:s3nTD+owHZ6b+F13JdSpXLtrAH35pOqdwdcZEZ/gwBc=
+github.com/jlewi/monogo v0.0.0-20240620144436-65625310edc2 h1:bc/Buaihm/M5ECks9BxYNyKvIMsqzyv7/a6Pl4DgwLE=
+github.com/jlewi/monogo v0.0.0-20240620144436-65625310edc2/go.mod h1:s3nTD+owHZ6b+F13JdSpXLtrAH35pOqdwdcZEZ/gwBc=
 github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82 h1:RPy3iuJyBD3dU0Kg5XCk0EDiY5qHhikPlbHi350K1Aw=
 github.com/jlewi/p22h/backend v0.0.0-20220627190823-9107137fbd82/go.mod h1:JiaOBomo8HT5rxx+0Z5/18F/s4NN5qrDBA/+iRC6OGg=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/go-logr/zapr"
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
