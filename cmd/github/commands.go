@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/hydros"

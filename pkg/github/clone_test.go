@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 	"github.com/jlewi/hydros/pkg/util"
 )
 

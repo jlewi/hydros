@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/zapr"
 	"github.com/jlewi/hydros/pkg/config"
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 	"go.uber.org/zap"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"

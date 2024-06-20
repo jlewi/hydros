@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 
 	"github.com/go-logr/zapr"
 	"github.com/gregjones/httpcache"

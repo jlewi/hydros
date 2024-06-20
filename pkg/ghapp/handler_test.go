@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jlewi/hydros/pkg/files"
+	"github.com/jlewi/monogo/files"
 
 	"github.com/go-logr/zapr"
 	"github.com/google/go-github/v52/github"
