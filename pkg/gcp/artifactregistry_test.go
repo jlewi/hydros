@@ -58,6 +58,15 @@ func Test_DockerImageRefToArtifactImage(t *testing.T) {
 			if d := cmp.Diff(tc.expected, actual); d != "" {
 				t.Fatalf("Unexpected diff:\n%s", d)
 			}
+
+			// Now try to convert it back
+			orig, err := actual.ToImageRef()
+			if err != nil {
+				t.Fatalf("Failed to convert image; %s", err)
+			}
+			if d := cmp.Diff(tc.ref, *orig); d != "" {
+				t.Fatalf("Unexpected diff:\n%s", d)
+			}
 		})
 	}
 }

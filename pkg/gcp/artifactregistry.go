@@ -32,6 +32,21 @@ func (a ArtifactImage) NameForTag() string {
 	return fmt.Sprintf("projects/%s/locations/%s/repositories/%s/packages/%s/tags/%s", a.Project, a.Location, a.Repository, a.Package, a.Tag)
 }
 
+func (a ArtifactImage) ToImageRef() (*util.DockerImageRef, error) {
+	pkg, err := url.QueryUnescape(a.Package)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Couldn't unescape package: %s", a.Package)
+	}
+	u := &util.DockerImageRef{
+		Registry: fmt.Sprintf("%s%s", a.Location, gcpRegistrySuffix),
+		Repo:     a.Project + "/" + a.Repository + "/" + pkg,
+		Tag:      a.Tag,
+		Sha:      a.Sha,
+	}
+
+	return u, nil
+}
+
 func FromImageRef(r util.DockerImageRef) (ArtifactImage, error) {
 	if !strings.HasSuffix(r.Registry, gcpRegistrySuffix) {
 		return ArtifactImage{}, errors.New("Registry must end with " + gcpRegistrySuffix)
