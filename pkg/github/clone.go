@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -112,31 +113,15 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 
 	log.Info("Clone configured", "url", url, "appAuth", appAuth, "dir", fullDir, "branch", branch)
 
-	// Clone the repository if it hasn't already been cloned.
-	cloneErr := func() error {
-		if _, err := os.Stat(fullDir); err == nil {
-			log.Info("Directory exists; repository will not be cloned", "directory", fullDir)
-			return nil
-		}
-
-		opts := &git.CloneOptions{
-			URL:      url,
-			Auth:     appAuth,
-			Progress: os.Stdout,
-		}
-
-		_, err := git.PlainClone(fullDir, false, opts)
-		return err
-	}()
-
-	if cloneErr != nil {
-		return err
+	opts := &git.CloneOptions{
+		URL:      url,
+		Auth:     appAuth,
+		Progress: os.Stdout,
 	}
 
-	// Open the repository
-	gitRepo, err := git.PlainOpenWithOptions(fullDir, &git.PlainOpenOptions{})
+	gitRepo, err := cloneOrOpen(ctx, fullDir, opts)
 	if err != nil {
-		return errors.Wrapf(err, "Could not open respoistory at %v; ensure the directory contains a git repo", fullDir)
+		return errors.Wrapf(err, "Could not clone or open repository %v", fullDir)
 	}
 
 	// N.B. It should generally be ok to hard code the name of the origin because we should be cloning the repository
@@ -222,4 +207,46 @@ func (r *ReposCloner) cloneRepo(ctx context.Context, uri string) error {
 	}
 
 	return nil
+}
+
+// cloneOrOpen clones the repository if it hasn't already been cloned. If the repository has already been cloned
+// it opens it. If the directory exists but doesn't contain a git repository it will try to delete the directory.
+// This is necessary when using temporary directories for the working directory because the files can be periodically
+// cleaned up. https://github.com/jlewi/hydros/issues/98
+func cloneOrOpen(ctx context.Context, fullDir string, opts *git.CloneOptions) (*git.Repository, error) {
+	log := zapr.NewLogger(zap.L())
+	// Clone the repository if it hasn't already been cloned.
+	if _, err := os.Stat(fullDir); err == nil {
+		log.Info("Directory exists; repository will not be cloned", "directory", fullDir)
+	} else {
+		_, err := git.PlainClone(fullDir, false, opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Open the repository
+	gitRepo, err := git.PlainOpenWithOptions(fullDir, &git.PlainOpenOptions{})
+	if err == nil {
+		return gitRepo, nil
+	}
+
+	log.Error(err, "Could not open repository; it may have been corrupted by automatic garbage collection", "repository", fullDir)
+	// Get the current timestamp
+	currentTime := time.Now()
+	timestamp := currentTime.Format("20060102_150405") // Format: YYYYMMDD_HHMMSS
+
+	// Create the new directory name with the timestamp
+	newName := fullDir + "." + timestamp
+
+	log.Info("Renaming directory", "old", fullDir, "new", newName)
+	if err := os.Rename(fullDir, newName); err != nil {
+		return nil, errors.Wrapf(err, "Renaming directory %v to %v failed. %v doesn't appear to be a valid git repository. Try deleting it so that hydros will reclone it", fullDir, newName, fullDir)
+	}
+
+	// Clone the repository
+	if _, err := git.PlainClone(fullDir, false, opts); err != nil {
+		return nil, errors.Wrapf(err, "Failed to clone repository %v", fullDir)
+	}
+	return git.PlainOpenWithOptions(fullDir, &git.PlainOpenOptions{})
 }

@@ -96,7 +96,7 @@ The build automatically tags the image with the following tags
 To build an image you can use the `hydros build` command
 
 ```bash
-hydros build ~/git_roboweb/kubedr/image.yaml
+hydros build -f ~/git_hydros/kubedr/images.yaml
 ```
 
 * If an image already exists in the registry with the same tag as the current commit, the image will not be rebuilt.
