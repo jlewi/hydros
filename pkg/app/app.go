@@ -18,11 +18,11 @@ import (
 	"github.com/jlewi/hydros/api/v1alpha1"
 	"github.com/jlewi/hydros/pkg/config"
 	"github.com/jlewi/hydros/pkg/ecrutil"
-	"github.com/jlewi/monogo/files"
 	"github.com/jlewi/hydros/pkg/github"
 	"github.com/jlewi/hydros/pkg/gitops"
 	"github.com/jlewi/hydros/pkg/images"
 	"github.com/jlewi/hydros/pkg/util"
+	"github.com/jlewi/monogo/files"
 	"github.com/jlewi/monogo/gcp/logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -233,7 +233,7 @@ func (a *App) SetupRegistry() error {
 
 // ApplyPaths applies the resources in the specified paths.
 // Paths can be files or directories.
-func (a *App) ApplyPaths(ctx context.Context, paths []string, period time.Duration, force bool) error {
+func (a *App) ApplyPaths(ctx context.Context, inPaths []string, period time.Duration, force bool) error {
 	log := util.LogFromContext(ctx)
 
 	if a.Config.GitHub == nil {
@@ -247,7 +247,8 @@ func (a *App) ApplyPaths(ctx context.Context, paths []string, period time.Durati
 		return errors.New("GitHub configuration is missing github.appID; You need to run hydros config set github.appID")
 	}
 
-	for _, resourcePath := range paths {
+	paths := make([]string, 0, len(inPaths))
+	for _, resourcePath := range inPaths {
 		newPaths, err := util.FindYamlFiles(resourcePath)
 		if err != nil {
 			log.Error(err, "Failed to find YAML files", "path", resourcePath)
@@ -400,6 +401,7 @@ func (a *App) apply(ctx context.Context, path string, syncNames map[string]strin
 				time.Sleep(period)
 			}
 		default:
+			syncNames[m.Name] = path
 			// Going forward we should be using the registry
 			gvk := schema.FromAPIVersionAndKind(m.APIVersion, m.Kind)
 			controller, err := a.Registry.GetController(gvk)
