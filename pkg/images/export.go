@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/gcrane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
@@ -15,7 +14,7 @@ import (
 //
 // This is different from image downloader because that appears to download the manifest and individual blobs.
 func ExportImage(src string, tarFilePath string) error {
-	options := []crane.Option{crane.WithAuthFromKeychain(gcrane.Keychain)}
+	options := []crane.Option{crane.WithAuthFromKeychain(keychain)}
 	var img v1.Image
 	desc, err := crane.Get(src, options...)
 	if err != nil {
