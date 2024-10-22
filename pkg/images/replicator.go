@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-logr/zapr"
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/gcrane"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -27,8 +26,8 @@ type Replicator struct {
 // NewReplicator creates a new Replicator.
 func NewReplicator() (*Replicator, error) {
 	// TODO(jeremy): What's a better pattern for handling options for crane.
-	rOptions := []remote.Option{remote.WithAuthFromKeychain(gcrane.Keychain)}
-	options := []crane.Option{crane.WithAuthFromKeychain(gcrane.Keychain)}
+	rOptions := []remote.Option{remote.WithAuthFromKeychain(keychain)}
+	options := []crane.Option{crane.WithAuthFromKeychain(keychain)}
 
 	r := &Replicator{
 		rOptions: rOptions,
